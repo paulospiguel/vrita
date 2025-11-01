@@ -1,22 +1,25 @@
-"use client"
+"use client";
 
-import { createContext, useContext, useState, ReactNode } from "react"
+import { createContext, useContext, useState, ReactNode } from "react";
 
-type GeneratorType = "prd" | "feature" | "designer" | null
+type GeneratorType = "prd" | "feature" | "designer" | null;
 
 interface GeneratorState {
-  input: string
-  output: string
+  input: string;
+  output: string;
 }
 
 interface GenerationContextType {
-  activeGenerator: GeneratorType
-  setActiveGenerator: (type: GeneratorType) => void
+  activeGenerator: GeneratorType;
+  setActiveGenerator: (type: GeneratorType) => void;
   generatorStates: {
-    feature: GeneratorState
-    designer: GeneratorState
-  }
-  updateGeneratorState: (type: "feature" | "designer", state: Partial<GeneratorState>) => void
+    feature: GeneratorState;
+    designer: GeneratorState;
+  };
+  updateGeneratorState: (
+    type: "feature" | "designer",
+    state: Partial<GeneratorState>
+  ) => void;
 }
 
 const GenerationContext = createContext<GenerationContextType>({
@@ -27,14 +30,14 @@ const GenerationContext = createContext<GenerationContextType>({
     designer: { input: "", output: "" },
   },
   updateGeneratorState: () => {},
-})
+});
 
 export function GenerationProvider({ children }: { children: ReactNode }) {
-  const [activeGenerator, setActiveGenerator] = useState<GeneratorType>("prd")
+  const [activeGenerator, setActiveGenerator] = useState<GeneratorType>("prd");
   const [generatorStates, setGeneratorStates] = useState({
     feature: { input: "", output: "" },
     designer: { input: "", output: "" },
-  })
+  });
 
   const updateGeneratorState = (
     type: "feature" | "designer",
@@ -43,8 +46,8 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
     setGeneratorStates((prev) => ({
       ...prev,
       [type]: { ...prev[type], ...state },
-    }))
-  }
+    }));
+  };
 
   return (
     <GenerationContext.Provider
@@ -57,8 +60,7 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
     >
       {children}
     </GenerationContext.Provider>
-  )
+  );
 }
 
-export const useGeneration = () => useContext(GenerationContext)
-
+export const useGeneration = () => useContext(GenerationContext);
