@@ -1,231 +1,490 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useRef } from "react"
-import { useReactToPrint } from "react-to-print"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { Sparkles, Copy, FileDown, FileText, CheckCircle2, Palette } from "lucide-react"
-import { useProject } from "@/components/providers/project-context"
-import { useGeneration } from "@/components/providers/generation-context"
-import { GenerationModalGeneric } from "@/components/ui/generation-modal-generic"
-import ReactMarkdown from "react-markdown"
-import remarkGfm from "remark-gfm"
-import { toast } from "sonner"
+import { useState, useEffect, useRef } from "react";
+import { useReactToPrint } from "react-to-print";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Sparkles,
+  Copy,
+  FileDown,
+  FileText,
+  CheckCircle2,
+  Palette,
+  Globe,
+  Loader2,
+  X,
+  Eye,
+  Upload,
+} from "lucide-react";
+import { useProject } from "@/components/providers/project-context";
+import { useGeneration } from "@/components/providers/generation-context";
+import { GenerationModalGeneric } from "@/components/ui/generation-modal-generic";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { toast } from "sonner";
+import Lottie from "lottie-react";
+import aiThinkingAnimation from "@/assets/lottiefiles/ai-thincking.json";
 
 export function SystemDesignerGenerator() {
-  const { projectData } = useProject()
-  const { activeGenerator, generatorStates, updateGeneratorState } = useGeneration()
-  const [input, setInput] = useState("")
-  const [output, setOutput] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [modalOpen, setModalOpen] = useState(false)
-  const [modalStatus, setModalStatus] = useState<"generating" | "completed" | "error">("generating")
-  const [errorMessage, setErrorMessage] = useState("")
-  const [copied, setCopied] = useState(false)
-  const abortControllerRef = useRef<AbortController | null>(null)
-  const previousActiveGeneratorRef = useRef<typeof activeGenerator>(null)
-  const isRestoringRef = useRef(false)
-  const lastContextInputRef = useRef("")
-  const lastContextOutputRef = useRef("")
-  const printRef = useRef<HTMLDivElement>(null)
+  const { projectData } = useProject();
+  const { activeGenerator, generatorStates, updateGeneratorState } =
+    useGeneration();
+  const [input, setInput] = useState("");
+  const [output, setOutput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalStatus, setModalStatus] = useState<
+    "generating" | "completed" | "error"
+  >("generating");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [copied, setCopied] = useState(false);
+  const [promptCopied, setPromptCopied] = useState(false);
+  const [url, setUrl] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [importedDesignData, setImportedDesignData] = useState<string | null>(
+    null
+  );
+  const [showDesignDataModal, setShowDesignDataModal] = useState(false);
+  const [applyingDirectly, setApplyingDirectly] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const previousActiveGeneratorRef = useRef<typeof activeGenerator>(null);
+  const isRestoringRef = useRef(false);
+  const lastContextInputRef = useRef("");
+  const lastContextOutputRef = useRef("");
+  const printRef = useRef<HTMLDivElement>(null);
 
   // Inicializar estado do contexto apenas quando a aba se torna ativa
   useEffect(() => {
-    const wasOtherTab = previousActiveGeneratorRef.current !== "designer"
-    const isNowDesigner = activeGenerator === "designer"
-    
+    const wasOtherTab = previousActiveGeneratorRef.current !== "designer";
+    const isNowDesigner = activeGenerator === "designer";
+
     // Só restaurar quando mudar de outra aba para designer
     if (isNowDesigner && wasOtherTab) {
-      isRestoringRef.current = true
+      isRestoringRef.current = true;
       // Acessar valores do contexto diretamente sem incluí-los nas dependências
-      const contextInput = generatorStates.designer.input || ""
-      const contextOutput = generatorStates.designer.output || ""
-      
-      setInput(contextInput)
-      setOutput(contextOutput)
-      
+      const contextInput = generatorStates.designer.input || "";
+      const contextOutput = generatorStates.designer.output || "";
+
+      setInput(contextInput);
+      setOutput(contextOutput);
+
       // Atualizar refs para evitar salvamento desnecessário
-      lastContextInputRef.current = contextInput
-      lastContextOutputRef.current = contextOutput
-      
+      lastContextInputRef.current = contextInput;
+      lastContextOutputRef.current = contextOutput;
+
       // Resetar flag após atualização
       requestAnimationFrame(() => {
-        isRestoringRef.current = false
-      })
+        isRestoringRef.current = false;
+      });
     }
-    
-    previousActiveGeneratorRef.current = activeGenerator
+
+    previousActiveGeneratorRef.current = activeGenerator;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeGenerator])
+  }, [activeGenerator]);
 
   // Salvar input no contexto quando o usuário digitar (debounce)
   useEffect(() => {
     // Não salvar se estamos restaurando do contexto
     if (isRestoringRef.current) {
-      return
+      return;
     }
-    
+
     // Não salvar se não estamos na aba designer
     if (activeGenerator !== "designer") {
-      return
+      return;
     }
-    
+
     // Não salvar se o valor não mudou desde a última vez
     if (input === lastContextInputRef.current) {
-      return
+      return;
     }
-    
+
     const timeoutId = setTimeout(() => {
       // Verificar novamente antes de salvar
-      if (!isRestoringRef.current && activeGenerator === "designer" && input !== lastContextInputRef.current) {
-        lastContextInputRef.current = input
-        updateGeneratorState("designer", { input })
+      if (
+        !isRestoringRef.current &&
+        activeGenerator === "designer" &&
+        input !== lastContextInputRef.current
+      ) {
+        lastContextInputRef.current = input;
+        updateGeneratorState("designer", { input });
       }
-    }, 500)
-    
-    return () => clearTimeout(timeoutId)
-  }, [input, activeGenerator, updateGeneratorState])
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [input, activeGenerator, updateGeneratorState]);
 
   // Salvar output no contexto quando mudar
   useEffect(() => {
     // Não salvar se estamos restaurando do contexto
     if (isRestoringRef.current) {
-      return
+      return;
     }
-    
+
     // Não salvar se não estamos na aba designer ou se output está vazio
     if (activeGenerator !== "designer" || !output) {
-      return
+      return;
     }
-    
+
     // Não salvar se o valor não mudou desde a última vez
     if (output === lastContextOutputRef.current) {
-      return
+      return;
     }
-    
-    lastContextOutputRef.current = output
-    updateGeneratorState("designer", { output })
-  }, [output, activeGenerator, updateGeneratorState])
+
+    lastContextOutputRef.current = output;
+    updateGeneratorState("designer", { output });
+  }, [output, activeGenerator, updateGeneratorState]);
+
+  const handleImportDesign = async () => {
+    if (!url.trim()) {
+      toast.error("URL é obrigatória", {
+        description: "Por favor, informe a URL do site para importar o design.",
+      });
+      return;
+    }
+
+    // Validar URL
+    try {
+      new URL(url);
+    } catch {
+      toast.error("URL inválida", {
+        description:
+          "Por favor, informe uma URL válida (ex: https://exemplo.com).",
+      });
+      return;
+    }
+
+    setImporting(true);
+    try {
+      const response = await fetch("/api/extract-design", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Erro ao extrair design do site");
+      }
+
+      const data = await response.json();
+      setImportedDesignData(data.analysis);
+
+      // Se não houver input, preencher com uma descrição básica
+      if (!input.trim()) {
+        setInput(
+          `Analise o design do site ${url} e crie um sistema de design baseado nos elementos encontrados.`
+        );
+      }
+
+      toast.success("Design importado com sucesso!", {
+        description:
+          "Clique no ícone de visualizar para ver os dados extraídos.",
+      });
+    } catch (error: any) {
+      console.error("Erro ao importar design:", error);
+      toast.error("Erro ao importar design", {
+        description:
+          error.message ||
+          "Tente novamente ou verifique se a URL está acessível.",
+      });
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const handleApplyDirectly = async () => {
+    if (!importedDesignData) return;
+
+    setApplyingDirectly(true);
+    setShowDesignDataModal(false);
+    setModalOpen(true);
+    setModalStatus("generating");
+
+    try {
+      // Converter a análise diretamente em sistema de design usando a IA mas sem modificações
+      const response = await fetch("/api/generate/designer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          input:
+            "Crie um sistema de design completo baseado na análise fornecida, mantendo todos os elementos do design original.",
+          projectContext: projectData,
+          importedDesignData: importedDesignData,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        if (
+          response.status === 402 &&
+          errorData.code === "SUBSCRIPTION_REQUIRED"
+        ) {
+          throw new Error("SUBSCRIPTION_REQUIRED");
+        }
+        throw new Error(errorData.error || "Erro ao gerar sistema de design");
+      }
+
+      const data = await response.json();
+      setOutput(data.content);
+      updateGeneratorState("designer", { output: data.content });
+      setModalStatus("completed");
+      toast.success("Sistema de design gerado com sucesso!");
+    } catch (error: any) {
+      console.error(error);
+      setModalStatus("error");
+      if (error.message === "SUBSCRIPTION_REQUIRED") {
+        setErrorMessage(
+          "Assinatura necessária para usar a chave de IA do servidor."
+        );
+        toast.error("Assinatura necessária", {
+          description:
+            "Configure sua chave de API ou assine um plano para continuar.",
+        });
+      } else {
+        setErrorMessage(error.message || "Erro ao gerar sistema de design.");
+        toast.error("Erro ao gerar sistema de design", {
+          description: "Tente novamente ou verifique sua conexão.",
+        });
+      }
+    } finally {
+      setApplyingDirectly(false);
+      setLoading(false);
+    }
+  };
+
+  const handleImportMarkdown = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".md,.markdown";
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      try {
+        const text = await file.text();
+        setOutput(text);
+        updateGeneratorState("designer", { output: text });
+        toast.success("Markdown importado com sucesso!", {
+          description: "Você pode modificá-lo ou usar a IA para ajustar.",
+        });
+      } catch (error) {
+        toast.error("Erro ao importar arquivo", {
+          description: "Verifique se o arquivo é válido.",
+        });
+      }
+    };
+    input.click();
+  };
 
   const handleGenerate = async () => {
-    if (!input.trim()) {
-      toast.error("Descreva o sistema de design", {
-        description: "Por favor, descreva o sistema de design que deseja criar.",
-      })
-      return
+    if (!input.trim() && !importedDesignData) {
+      toast.error("Descreva o sistema de design ou importe um design", {
+        description:
+          "Por favor, descreva o sistema de design ou importe um design de um site.",
+      });
+      return;
     }
 
     // Salvar input antes de iniciar geração
-    updateGeneratorState("designer", { input })
+    updateGeneratorState("designer", { input });
 
     // Cancelar requisição anterior se existir
     if (abortControllerRef.current) {
-      abortControllerRef.current.abort()
+      abortControllerRef.current.abort();
     }
 
-    setLoading(true)
-    setModalOpen(true)
-    setModalStatus("generating")
-    setErrorMessage("")
-    
+    setLoading(true);
+    setModalOpen(true);
+    setModalStatus("generating");
+    setErrorMessage("");
+
     // Criar novo AbortController
-    const abortController = new AbortController()
-    abortControllerRef.current = abortController
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
 
     try {
       const response = await fetch("/api/generate/designer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           input,
-          projectContext: projectData 
+          projectContext: projectData,
+          importedDesignData: importedDesignData || undefined,
         }),
         signal: abortController.signal,
-      })
+      });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        if (response.status === 402 && errorData.code === "SUBSCRIPTION_REQUIRED") {
-          throw new Error("SUBSCRIPTION_REQUIRED")
+        const errorData = await response.json().catch(() => ({}));
+        if (
+          response.status === 402 &&
+          errorData.code === "SUBSCRIPTION_REQUIRED"
+        ) {
+          throw new Error("SUBSCRIPTION_REQUIRED");
         }
         // Usar error ou details, o que estiver disponível
-        const errorMessage = errorData.error || errorData.message || errorData.details || "Erro ao gerar sistema de design"
-        throw new Error(errorMessage)
+        const errorMessage =
+          errorData.error ||
+          errorData.message ||
+          errorData.details ||
+          "Erro ao gerar sistema de design";
+        throw new Error(errorMessage);
       }
 
-      const data = await response.json()
-      
+      const data = await response.json();
+
       // Atualizar output tanto no estado local quanto no contexto
-      setOutput(data.content)
-      updateGeneratorState("designer", { output: data.content })
-      setModalStatus("completed")
-      toast.success("Sistema de design gerado com sucesso!")
+      setOutput(data.content);
+      updateGeneratorState("designer", { output: data.content });
+      setModalStatus("completed");
+      toast.success("Sistema de design gerado com sucesso!");
     } catch (error: any) {
       // Ignorar erro se foi cancelado manualmente
       if (error.name === "AbortError") {
-        setModalOpen(false)
-        setLoading(false)
-        abortControllerRef.current = null
-        return
+        setModalOpen(false);
+        setLoading(false);
+        abortControllerRef.current = null;
+        return;
       }
-      console.error(error)
-      
-      setModalStatus("error")
+      console.error(error);
+
+      setModalStatus("error");
       if (error.message === "SUBSCRIPTION_REQUIRED") {
-        setErrorMessage("Assinatura necessária para usar a chave de IA do servidor. Configure sua própria chave nas configurações ou assine um plano.")
+        setErrorMessage(
+          "Assinatura necessária para usar a chave de IA do servidor. Configure sua própria chave nas configurações ou assine um plano."
+        );
         toast.error("Assinatura necessária", {
-          description: "Configure sua chave de API ou assine um plano para continuar.",
+          description:
+            "Configure sua chave de API ou assine um plano para continuar.",
           action: {
             label: "Ver Planos",
-            onClick: () => window.location.href = "/subscription"
-          }
-        })
+            onClick: () => (window.location.href = "/subscription"),
+          },
+        });
       } else {
-        setErrorMessage(error.message || "Erro ao gerar sistema de design. Tente novamente.")
+        setErrorMessage(
+          error.message || "Erro ao gerar sistema de design. Tente novamente."
+        );
         toast.error("Erro ao gerar sistema de design", {
           description: "Tente novamente ou verifique sua conexão.",
-        })
+        });
       }
     } finally {
-      setLoading(false)
-      abortControllerRef.current = null
+      setLoading(false);
+      abortControllerRef.current = null;
     }
-  }
+  };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(output)
-    setCopied(true)
+    navigator.clipboard.writeText(output);
+    setCopied(true);
     toast.success("Copiado!", {
       description: "Sistema de design copiado para a área de transferência.",
-    })
-    setTimeout(() => setCopied(false), 2000)
-  }
+    });
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const generateAIPrompt = () => {
+    return `Você é um especialista em UI/UX e desenvolvedor experiente com conhecimento profundo em React, TypeScript, Tailwind CSS e componentes modernos de interface.
+
+Analise o seguinte sistema de design completo e gere o código de implementação seguindo todas as especificações, padrões e diretrizes descritas:
+
+${output}
+
+INSTRUÇÕES PARA IMPLEMENTAÇÃO:
+
+1. **Estrutura de Componentes:**
+   - Crie componentes React/TypeScript reutilizáveis
+   - Use Tailwind CSS conforme o sistema de design
+   - Implemente variantes e estados conforme especificado
+   - Siga os padrões de espaçamento e layout descritos
+
+2. **Cores e Tokens:**
+   - Implemente todas as cores da paleta usando variáveis CSS ou Tailwind
+   - Use os tokens de cor exatamente como especificado
+   - Mantenha contraste e acessibilidade (WCAG)
+
+3. **Tipografia:**
+   - Implemente a hierarquia tipográfica completa
+   - Use as fontes especificadas
+   - Aplique tamanhos, pesos e espaçamentos conforme o design system
+
+4. **Componentes UI:**
+   - Implemente todos os componentes descritos (botões, inputs, cards, etc.)
+   - Inclua todos os estados (hover, active, disabled, error, success)
+   - Siga os padrões de elevação, sombras e bordas
+
+5. **Layout e Responsividade:**
+   - Implemente o grid system descrito
+   - Use os breakpoints especificados
+   - Garanta responsividade em todos os dispositivos
+
+6. **Animações e Transições:**
+   - Implemente as animações e transições descritas
+   - Use as durações e easing functions especificadas
+
+7. **Acessibilidade:**
+   - Implemente navegação por teclado
+   - Adicione atributos ARIA quando necessário
+   - Garanta contraste adequado
+
+Gere código completo, funcional e pronto para uso, seguindo as melhores práticas de desenvolvimento e mantendo fidelidade total ao sistema de design fornecido.`;
+  };
+
+  const handleCopyPrompt = () => {
+    const prompt = generateAIPrompt();
+    navigator.clipboard.writeText(prompt);
+    setPromptCopied(true);
+    toast.success("Prompt copiado!", {
+      description: "Prompt para IA copiado para a área de transferência.",
+    });
+    setTimeout(() => setPromptCopied(false), 2000);
+  };
 
   const handleDownloadMD = () => {
-    const blob = new Blob([output], { type: "text/markdown" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    const projectName = projectData.projectName || "system-designer"
-    a.download = `${projectName}-design-system.md`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
+    const blob = new Blob([output], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    const projectName = projectData.projectName || "system-designer";
+    a.download = `${projectName}-design-system.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const handleExportPDF = useReactToPrint({
     contentRef: printRef,
-    documentTitle: `${projectData.projectName || "system-designer"}-design-system`,
-  })
+    documentTitle: `${
+      projectData.projectName || "system-designer"
+    }-design-system`,
+  });
 
   // Handler para evitar fechar modal durante geração
   const handleModalOpenChange = (open: boolean) => {
     // Não permitir fechar durante geração (dupla verificação: loading e status)
     if ((loading || modalStatus === "generating") && !open) {
-      return
+      return;
     }
-    setModalOpen(open)
-  }
+    setModalOpen(open);
+  };
 
   return (
     <>
@@ -238,95 +497,256 @@ export function SystemDesignerGenerator() {
         description="Aguarde enquanto geramos o sistema de design completo com teoria das cores, componentes e guias de estilo"
         warningMessage="⚠️ Não feche esta janela ou troque de aba até a geração ser concluída, pois isso pode cancelar o processo."
       />
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-gray-900">
-            <div className="p-2 rounded-lg bg-pink-100">
-              <Palette className="h-5 w-5 text-pink-600" />
-            </div>
-            Descreva o Sistema de Design
-          </CardTitle>
-          <CardDescription>
-            Descreva o tipo de aplicativo e contexto para criar um sistema de design personalizado
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Textarea
-            placeholder="Exemplo: Preciso de um sistema de design para um aplicativo de saúde mental que seja acolhedor, calmo e inspire confiança. O público-alvo são pessoas que buscam apoio emocional..."
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            className="min-h-[300px] resize-none"
-          />
-          <Button
-            onClick={handleGenerate}
-            disabled={loading || !input.trim()}
-            className="w-full bg-gray-900 hover:bg-gray-800 text-white"
-            size="lg"
-          >
-            {loading ? (
-              <>
-                <Sparkles className="mr-2 h-4 w-4 animate-spin" />
-                Gerando Sistema...
-              </>
-            ) : (
-              <>
-                <Palette className="mr-2 h-4 w-4" />
-                Gerar System Designer com IA
-              </>
-            )}
-          </Button>
-        </CardContent>
-      </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-gray-900">
-            Sistema de Design Preview
-          </CardTitle>
-          <CardDescription>
-            Documento estruturado pronto para uso
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {output ? (
-            <>
-              <div className="flex gap-2 flex-wrap">
-                <Button onClick={handleCopy} variant="outline" size="sm" className="flex-1 sm:flex-initial">
-                  {copied ? (
+      {/* Overlay para bloquear ações durante importação */}
+      {importing && (
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center">
+          <div className="bg-card border border-border rounded-lg p-6 shadow-lg max-w-md mx-4 text-center">
+            <div className="flex justify-center mb-4">
+              <Lottie
+                animationData={aiThinkingAnimation}
+                className="w-24 h-24"
+                loop={true}
+              />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Analisando Design...</h3>
+            <p className="text-sm text-muted-foreground">
+              Aguarde enquanto extraímos os elementos de design do site. Esta
+              operação pode levar alguns segundos.
+            </p>
+          </div>
+        </div>
+      )}
+
+      <div
+        className={`grid grid-cols-1 lg:grid-cols-2 gap-6 ${
+          importing ? "pointer-events-none opacity-50" : ""
+        }`}
+      >
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-gray-900">
+              <div className="p-2 rounded-lg bg-pink-100">
+                <Palette className="h-5 w-5 text-pink-600" />
+              </div>
+              Descreva o Sistema de Design
+            </CardTitle>
+            <CardDescription>
+              Descreva o tipo de aplicativo e contexto para criar um sistema de
+              design personalizado
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div>
+                <label className="text-sm font-medium text-foreground">
+                  Importar Design de um Site (Opcional)
+                </label>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Cole a URL de um site e a IA analisará os elementos de design
+                  para criar um sistema baseado nele
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  type="url"
+                  placeholder="https://exemplo.com"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  className="flex-1"
+                  disabled={importing}
+                />
+                <Button
+                  onClick={handleImportDesign}
+                  disabled={importing || !url.trim()}
+                  variant="outline"
+                  size="default"
+                  className="relative overflow-hidden"
+                >
+                  {importing ? (
                     <>
-                      <CheckCircle2 className="h-4 w-4 sm:mr-2" />
-                      <span className="hidden sm:inline">Copiado!</span>
-                      <span className="sm:hidden">OK</span>
+                      <div className="absolute inset-0 flex items-center justify-center bg-background/80">
+                        <Lottie
+                          animationData={aiThinkingAnimation}
+                          className="w-12 h-12"
+                          loop={true}
+                        />
+                      </div>
+                      <span className="relative z-10 opacity-0">Importar</span>
                     </>
                   ) : (
                     <>
-                      <Copy className="h-4 w-4 sm:mr-2" />
-                      <span className="hidden sm:inline">Copiar</span>
+                      <Globe className="h-4 w-4 mr-2" />
+                      Importar
                     </>
                   )}
                 </Button>
+              </div>
+              {importedDesignData && (
+                <div className="p-3 bg-accent rounded-lg border border-border flex items-start justify-between gap-2">
+                  <div className="flex items-start gap-2 flex-1">
+                    <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-xs text-muted-foreground">
+                        <strong className="text-foreground">
+                          Design importado com sucesso!
+                        </strong>{" "}
+                        Visualize os dados extraídos ou descreva modificações
+                        abaixo.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 flex-shrink-0"
+                      onClick={() => setShowDesignDataModal(true)}
+                      title="Visualizar dados extraídos"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 flex-shrink-0"
+                      onClick={() => {
+                        setImportedDesignData(null);
+                        setUrl("");
+                        toast.info("Design importado removido");
+                      }}
+                      title="Remover design importado"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">
+                {importedDesignData
+                  ? "Descreva modificações ou ajustes (opcional)"
+                  : "Descreva o Sistema de Design"}
+              </label>
+              <Textarea
+                placeholder={
+                  importedDesignData
+                    ? "Exemplo: Ajuste as cores primárias para tons mais suaves, aumente o espaçamento entre elementos e adicione mais contraste nos botões..."
+                    : "Exemplo: Preciso de um sistema de design para um aplicativo de saúde mental que seja acolhedor, calmo e inspire confiança. O público-alvo são pessoas que buscam apoio emocional..."
+                }
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                className="min-h-[300px] resize-none"
+              />
+            </div>
+
+            <Button
+              onClick={handleGenerate}
+              disabled={loading || (!input.trim() && !importedDesignData)}
+              className="w-full bg-gray-900 hover:bg-gray-800 text-white"
+              size="lg"
+            >
+              {loading ? (
+                <>
+                  <Sparkles className="mr-2 h-4 w-4 animate-spin" />
+                  Gerando Sistema...
+                </>
+              ) : (
+                <>
+                  <Palette className="mr-2 h-4 w-4" />
+                  Gerar System Designer com IA
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-gray-900">
+                  Sistema de Design Preview
+                </CardTitle>
+                <CardDescription>
+                  Documento estruturado pronto para uso
+                </CardDescription>
+              </div>
+              {!output && (
                 <Button
-                  onClick={handleDownloadMD}
+                  onClick={handleImportMarkdown}
                   variant="outline"
                   size="sm"
-                  className="flex-1 sm:flex-initial"
+                  title="Importar markdown existente"
                 >
-                  <FileText className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Markdown</span>
-                  <span className="sm:hidden">MD</span>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Importar MD
                 </Button>
-                <Button onClick={handleExportPDF} variant="outline" size="sm" className="flex-1 sm:flex-initial">
-                  <FileDown className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Exportar PDF</span>
-                  <span className="sm:hidden">PDF</span>
-                </Button>
-              </div>
-              {/* Conteúdo oculto para impressão/PDF */}
-              <div className="hidden">
-                <div
-                  ref={printRef}
-                  className="p-8 bg-white prose prose-sm max-w-none print:prose-sm
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {output ? (
+              <>
+                <div className="flex gap-2 flex-wrap">
+                  <Button
+                    onClick={handleCopy}
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 sm:flex-initial"
+                  >
+                    {copied ? (
+                      <>
+                        <CheckCircle2 className="h-4 w-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Copiado!</span>
+                        <span className="sm:hidden">OK</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-4 w-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Copiar</span>
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    onClick={handleImportMarkdown}
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 sm:flex-initial"
+                    title="Importar markdown para modificar"
+                  >
+                    <Upload className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Importar MD</span>
+                    <span className="sm:hidden">MD</span>
+                  </Button>
+                  <Button
+                    onClick={handleDownloadMD}
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 sm:flex-initial"
+                  >
+                    <FileText className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Markdown</span>
+                    <span className="sm:hidden">MD</span>
+                  </Button>
+                  <Button
+                    onClick={handleExportPDF}
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 sm:flex-initial"
+                  >
+                    <FileDown className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Exportar PDF</span>
+                    <span className="sm:hidden">PDF</span>
+                  </Button>
+                </div>
+                {/* Conteúdo oculto para impressão/PDF */}
+                <div className="hidden">
+                  <div
+                    ref={printRef}
+                    className="p-8 bg-white prose prose-sm max-w-none print:prose-sm
                     prose-h1:text-3xl prose-h1:font-bold prose-h1:mb-6 prose-h1:text-pink-700 prose-h1:border-b-2 prose-h1:border-pink-500/30 prose-h1:pb-3
                     prose-h2:text-2xl prose-h2:font-semibold prose-h2:mt-8 prose-h2:mb-4 prose-h2:text-rose-600 prose-h2:border-b prose-h2:border-rose-200 prose-h2:pb-2
                     prose-h3:text-xl prose-h3:font-semibold prose-h3:mt-6 prose-h3:mb-3 prose-h3:text-pink-600
@@ -343,21 +763,21 @@ export function SystemDesignerGenerator() {
                     prose-a:text-pink-600 prose-a:font-semibold prose-a:underline
                     prose-table:text-sm prose-th:bg-pink-100 prose-th:text-pink-900 prose-th:font-semibold prose-th:p-2 prose-td:p-2 prose-td:border-t prose-td:border-gray-200
                   "
-                  style={{
-                    padding: "32px",
-                    backgroundColor: "white",
-                  }}
-                >
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {output}
-                  </ReactMarkdown>
+                    style={{
+                      padding: "32px",
+                      backgroundColor: "white",
+                    }}
+                  >
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {output}
+                    </ReactMarkdown>
+                  </div>
                 </div>
-              </div>
 
-              {/* Conteúdo visível na tela */}
-              <div className="border border-gray-200/50 rounded-xl p-6 bg-white max-h-[600px] overflow-y-auto">
-                <div
-                  className="prose prose-sm dark:prose-invert max-w-none
+                {/* Conteúdo visível na tela */}
+                <div className="border border-gray-200/50 rounded-xl p-6 bg-white max-h-[600px] overflow-y-auto">
+                  <div
+                    className="prose prose-sm dark:prose-invert max-w-none
                   prose-headings:scroll-mt-20
                   prose-h1:text-3xl prose-h1:font-bold prose-h1:mb-6 prose-h1:mt-0 prose-h1:pb-3 prose-h1:border-b-2 prose-h1:border-pink-500/30 prose-h1:text-pink-700 dark:prose-h1:text-pink-400
                   prose-h2:text-2xl prose-h2:font-semibold prose-h2:mt-8 prose-h2:mb-4 prose-h2:text-rose-600 dark:prose-h2:text-rose-400 prose-h2:border-b prose-h2:border-rose-200 dark:prose-h2:border-rose-800 prose-h2:pb-2
@@ -375,21 +795,117 @@ export function SystemDesignerGenerator() {
                   prose-a:text-pink-600 dark:prose-a:text-pink-400 prose-a:font-semibold hover:prose-a:text-pink-800 dark:hover:prose-a:text-pink-300 prose-a:underline
                   prose-table:text-sm prose-th:bg-pink-100 dark:prose-th:bg-pink-900/30 prose-th:text-pink-900 dark:prose-th:text-pink-100 prose-th:font-semibold prose-th:p-2 prose-td:p-2 prose-td:border-t prose-td:border-gray-200 dark:prose-td:border-gray-700
                 "
-                >
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {output}
-                  </ReactMarkdown>
+                  >
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {output}
+                    </ReactMarkdown>
+                  </div>
                 </div>
+
+                {/* Seção Prompt para AI */}
+                <div className="mt-6 pt-6 border-t border-gray-200/50">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                      <Sparkles className="h-5 w-5 text-pink-600 dark:text-pink-400" />
+                      Prompt para AI
+                    </h3>
+                    <Button
+                      onClick={handleCopyPrompt}
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-2"
+                    >
+                      {promptCopied ? (
+                        <>
+                          <CheckCircle2 className="h-4 w-4" />
+                          <span className="hidden sm:inline">Copiado!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-4 w-4" />
+                          <span className="hidden sm:inline">
+                            Copiar Prompt
+                          </span>
+                          <span className="sm:hidden">Copiar</span>
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Copie este prompt e use em uma IA para gerar o código de
+                    implementação baseado no sistema de design acima.
+                  </p>
+                  <div className="relative">
+                    <pre className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4 overflow-x-auto text-xs text-gray-800 dark:text-gray-200 font-mono leading-relaxed whitespace-pre-wrap">
+                      {generateAIPrompt()}
+                    </pre>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="border border-gray-200/50 rounded-xl p-8 text-center text-gray-400 bg-gray-50/50">
+                O sistema de design aparecerá aqui após a geração
               </div>
-            </>
-          ) : (
-            <div className="border border-gray-200/50 rounded-xl p-8 text-center text-gray-400 bg-gray-50/50">
-              O sistema de design aparecerá aqui após a geração
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Modal para visualizar dados extraídos */}
+      <Dialog open={showDesignDataModal} onOpenChange={setShowDesignDataModal}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Dados Extraídos do Design</DialogTitle>
+            <DialogDescription>
+              Análise estruturada dos elementos de design extraídos do site.
+              Você pode aplicar diretamente ou fechar para fazer modificações.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto pr-2">
+            <div
+              className="prose prose-sm dark:prose-invert max-w-none
+            prose-headings:scroll-mt-20
+            prose-h1:text-2xl prose-h1:font-bold prose-h1:mb-4 prose-h1:mt-0 prose-h1:pb-2 prose-h1:border-b prose-h1:border-border
+            prose-h2:text-xl prose-h2:font-semibold prose-h2:mt-6 prose-h2:mb-3 prose-h2:text-foreground prose-h2:border-b prose-h2:border-border prose-h2:pb-1
+            prose-h3:text-lg prose-h3:font-semibold prose-h3:mt-4 prose-h3:mb-2
+            prose-p:text-muted-foreground prose-p:leading-relaxed prose-p:my-2
+            prose-strong:text-foreground prose-strong:font-bold
+            prose-ul:list-disc prose-ul:ml-6 prose-ul:text-muted-foreground prose-ul:my-3
+            prose-ol:list-decimal prose-ol:ml-6 prose-ol:text-muted-foreground prose-ol:my-3
+            prose-li:text-muted-foreground prose-li:my-1
+            prose-code:text-primary prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:font-mono
+            prose-pre:bg-muted prose-pre:text-foreground prose-pre:rounded-lg prose-pre:overflow-x-auto prose-pre:p-4
+            prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-muted-foreground prose-blockquote:bg-muted/50 prose-blockquote:py-2 prose-blockquote:rounded-r
+          "
+            >
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {importedDesignData || ""}
+              </ReactMarkdown>
             </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+          </div>
+          <DialogFooter className="mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowDesignDataModal(false)}
+            >
+              Fechar e Modificar
+            </Button>
+            <Button onClick={handleApplyDirectly} disabled={applyingDirectly}>
+              {applyingDirectly ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Aplicando...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  Aplicar Diretamente
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
-  )
+  );
 }

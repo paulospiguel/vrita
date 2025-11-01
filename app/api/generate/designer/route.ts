@@ -14,11 +14,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
     }
 
-    const { input, projectContext } = await request.json()
+    const { input, projectContext, importedDesignData } = await request.json()
 
-    if (!input || typeof input !== "string") {
+    if ((!input || typeof input !== "string" || !input.trim()) && !importedDesignData) {
       return NextResponse.json(
-        { error: "Input é obrigatório" },
+        { error: "Input ou design importado é obrigatório" },
         { status: 400 }
       )
     }
@@ -39,7 +39,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const content = await generateSystemDesigner(input, user.id, projectContext as ProjectData | undefined)
+    const content = await generateSystemDesigner(
+      input, 
+      user.id, 
+      projectContext as ProjectData | undefined,
+      importedDesignData as string | undefined
+    )
 
     return NextResponse.json({ content })
   } catch (error: any) {

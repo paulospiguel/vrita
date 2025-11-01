@@ -265,7 +265,8 @@ Retorne a descrição completa e detalhada.`
 export async function generateSystemDesigner(
   input: string,
   userId: string,
-  projectContext?: ProjectData
+  projectContext?: ProjectData,
+  importedDesignData?: string
 ): Promise<string> {
   const config = await getAIConfigForUser(userId)
   const provider = createAIProvider(config)
@@ -284,11 +285,21 @@ export async function generateSystemDesigner(
       contextInfo += `Visão do Projeto: ${projectContext.vision}\n`
   }
 
+  let designAnalysisSection = ""
+  if (importedDesignData) {
+    designAnalysisSection = `\n\n## ANÁLISE DE DESIGN IMPORTADO\n\nAbaixo está uma análise detalhada dos elementos de design extraídos de um site:\n\n${importedDesignData}\n\n**INSTRUÇÕES IMPORTANTES:**\n- Use esta análise como BASE FUNDAMENTAL para criar o sistema de design\n- Mantenha a essência, personalidade e identidade visual do design original\n- Se o usuário solicitou modificações ou ajustes específicos, aplique-os de forma inteligente preservando a harmonia do design\n- Combine os elementos do design original com as modificações solicitadas de forma coerente\n- Se não houver modificações específicas, crie um sistema de design completo baseado na análise fornecida\n`
+  }
+
+  const userInstructions = input.trim() || (importedDesignData ? "Crie um sistema de design completo baseado na análise fornecida." : "")
+
   const prompt = `Você é um especialista em Design Systems, UI/UX, teoria das cores e psicologia visual.
 
-Crie um sistema de design completo baseado na seguinte descrição:
+${importedDesignData 
+  ? `Você recebeu uma análise detalhada de design extraída de um site. ${input.trim() ? 'O usuário também forneceu instruções específicas para modificações ou ajustes.' : 'Crie um sistema de design completo baseado nesta análise.'}`
+  : `Crie um sistema de design completo baseado na seguinte descrição:`
+}
 
-${input}${contextInfo ? `\n\n${contextInfo}` : ""}
+${userInstructions}${contextInfo ? `\n\n${contextInfo}` : ""}${designAnalysisSection}
 
 O sistema de design deve incluir:
 
