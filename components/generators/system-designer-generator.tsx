@@ -239,10 +239,12 @@ export function SystemDesignerGenerator() {
         warningMessage="⚠️ Não feche esta janela ou troque de aba até a geração ser concluída, pois isso pode cancelar o processo."
       />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <Card className="shadow-lg">
+      <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Palette className="h-5 w-5 text-pink-600" />
+          <CardTitle className="flex items-center gap-2 text-gray-900">
+            <div className="p-2 rounded-lg bg-pink-100">
+              <Palette className="h-5 w-5 text-pink-600" />
+            </div>
             Descreva o Sistema de Design
           </CardTitle>
           <CardDescription>
@@ -259,7 +261,7 @@ export function SystemDesignerGenerator() {
           <Button
             onClick={handleGenerate}
             disabled={loading || !input.trim()}
-            className="w-full bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700"
+            className="w-full bg-gray-900 hover:bg-gray-800 text-white"
             size="lg"
           >
             {loading ? (
@@ -277,9 +279,9 @@ export function SystemDesignerGenerator() {
         </CardContent>
       </Card>
 
-      <Card className="shadow-lg">
+      <Card>
         <CardHeader>
-          <CardTitle className="bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">
+          <CardTitle className="text-gray-900">
             Sistema de Design Preview
           </CardTitle>
           <CardDescription>
@@ -353,7 +355,7 @@ export function SystemDesignerGenerator() {
               </div>
 
               {/* Conteúdo visível na tela */}
-              <div className="border rounded-lg p-6 bg-gradient-to-br from-slate-50 via-pink-50/30 to-rose-50/30 dark:from-gray-900 dark:via-pink-900/10 dark:to-rose-900/10 max-h-[600px] overflow-y-auto shadow-inner">
+              <div className="border border-gray-200/50 rounded-xl p-6 bg-white max-h-[600px] overflow-y-auto">
                 <div
                   className="prose prose-sm dark:prose-invert max-w-none
                   prose-headings:scroll-mt-20
@@ -381,7 +383,7 @@ export function SystemDesignerGenerator() {
               </div>
             </>
           ) : (
-            <div className="border rounded-md p-8 text-center text-gray-400 dark:text-gray-600">
+            <div className="border border-gray-200/50 rounded-xl p-8 text-center text-gray-400 bg-gray-50/50">
               O sistema de design aparecerá aqui após a geração
             </div>
           )}

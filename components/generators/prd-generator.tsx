@@ -258,10 +258,12 @@ export function PRDGenerator() {
         errorMessage={errorMessage}
       />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="shadow-lg">
+        <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-blue-600" />
+            <CardTitle className="flex items-center gap-2 text-gray-900">
+              <div className="p-2 rounded-lg bg-green-100">
+                <Sparkles className="h-5 w-5 text-green-600" />
+              </div>
               Informações do Projeto
             </CardTitle>
             <CardDescription>
@@ -271,9 +273,9 @@ export function PRDGenerator() {
           </CardHeader>
           <CardContent className="space-y-6">
             <Tabs defaultValue="vision" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-4">
-                <TabsTrigger value="vision">Visão Geral</TabsTrigger>
-                <TabsTrigger value="details">Detalhes</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 mb-4 bg-gray-100 rounded-xl p-1">
+                <TabsTrigger value="vision" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Visão Geral</TabsTrigger>
+                <TabsTrigger value="details" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Detalhes</TabsTrigger>
               </TabsList>
 
               <TabsContent value="vision" className="space-y-4">
@@ -428,7 +430,7 @@ export function PRDGenerator() {
                   !projectData.projectName.trim() ||
                   !projectData.description.trim()
                 }
-                className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                className="flex-1 bg-gray-900 hover:bg-gray-800 text-white"
                 size="lg"
               >
                 <Sparkles className="mr-2 h-4 w-4" />
@@ -439,9 +441,9 @@ export function PRDGenerator() {
           </CardContent>
         </Card>
 
-        <Card className="shadow-lg">
+        <Card>
           <CardHeader>
-            <CardTitle className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <CardTitle className="text-gray-900">
               PRD Preview
             </CardTitle>
             <CardDescription>
@@ -515,7 +517,7 @@ export function PRDGenerator() {
                 </div>
 
                 {/* Conteúdo visível na tela */}
-                <div className="border rounded-lg p-6 bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30 dark:from-gray-900 dark:via-blue-900/10 dark:to-purple-900/10 max-h-[600px] overflow-y-auto shadow-inner">
+                <div className="border border-gray-200/50 rounded-xl p-6 bg-white max-h-[600px] overflow-y-auto">
                   <div
                     className="prose prose-sm dark:prose-invert max-w-none
                     prose-headings:scroll-mt-20
@@ -543,7 +545,7 @@ export function PRDGenerator() {
                 </div>
               </>
             ) : (
-              <div className="border rounded-md p-8 text-center text-gray-400 dark:text-gray-600">
+              <div className="border border-gray-200/50 rounded-xl p-8 text-center text-gray-400 bg-gray-50/50">
                 O PRD aparecerá aqui após preencher as informações
               </div>
             )}

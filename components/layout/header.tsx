@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/ui/logo";
 import { createClient } from "@/lib/supabase/client";
 import { Settings, LogOut, FolderOpen, Menu, X } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -21,27 +21,10 @@ export function Header() {
   };
 
   return (
-    <header className="border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sticky top-0 z-50">
+    <header className="border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
       <div className="container mx-auto px-4 py-3 sm:py-4">
         <div className="flex items-center justify-between">
-          <Link
-            href="/"
-            className="flex items-center space-x-2 sm:space-x-3 min-w-0"
-          >
-            <div className="relative h-12 w-12 sm:h-16 sm:w-16 flex-shrink-0">
-              <Image
-                src="/vrita-logo.png"
-                alt="vRita AI Logo"
-                fill
-                className="object-contain"
-                priority
-                sizes="(max-width: 640px) 32px, 40px"
-              />
-            </div>
-            <span className="text-lg sm:text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent truncate">
-              AI Project Manager
-            </span>
-          </Link>
+          <Logo href="/" withContainer size="default" />
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-2 lg:space-x-4">

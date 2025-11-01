@@ -167,7 +167,7 @@ export function SettingsContent({ user }: SettingsContentProps) {
     <>
       <Header />
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+        <h1 className="text-3xl font-bold mb-8 text-foreground">
           Configurações
         </h1>
 
@@ -193,7 +193,7 @@ export function SettingsContent({ user }: SettingsContentProps) {
                     className="rounded-full"
                   />
                 ) : (
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
+                  <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-2xl font-bold">
                     {user.email?.charAt(0).toUpperCase()}
                   </div>
                 )}
@@ -201,7 +201,7 @@ export function SettingsContent({ user }: SettingsContentProps) {
                   <p className="font-semibold text-lg">
                     {user.user_metadata?.full_name || user.email}
                   </p>
-                  <p className="text-sm text-gray-500 flex items-center gap-1">
+                  <p className="text-sm text-muted-foreground flex items-center gap-1">
                     <Mail className="h-4 w-4" />
                     {user.email}
                   </p>
@@ -364,7 +364,7 @@ export function SettingsContent({ user }: SettingsContentProps) {
                           .map((m) => (
                             <div
                               key={m.id}
-                              className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded-md"
+                              className="flex items-center justify-between p-2 bg-muted rounded-md"
                             >
                               <div className="flex-1">
                                 <p className="text-sm font-medium">{m.name}</p>
@@ -413,7 +413,7 @@ export function SettingsContent({ user }: SettingsContentProps) {
                                     }
                                   }}
                                 >
-                                  <Trash2 className="h-4 w-4 text-red-600" />
+                                  <Trash2 className="h-4 w-4 text-destructive" />
                                 </Button>
                               </div>
                             </div>
@@ -579,7 +579,7 @@ export function SettingsContent({ user }: SettingsContentProps) {
           <Card className="shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-blue-600" />
+                <Sparkles className="h-5 w-5 text-primary" />
                 Sobre o vRita AI
               </CardTitle>
               <CardDescription>
@@ -588,11 +588,11 @@ export function SettingsContent({ user }: SettingsContentProps) {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                  <h3 className="font-semibold text-lg mb-2 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                <div className="p-4 bg-accent rounded-lg border border-border">
+                  <h3 className="font-semibold text-lg mb-2 text-foreground">
                     Objetivo da Plataforma
                   </h3>
-                  <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                  <p className="text-sm text-muted-foreground leading-relaxed">
                     O vRita AI é uma plataforma SaaS projetada para revolucionar a criação de documentação técnica 
                     para projetos de software. Nossa missão é acelerar o desenvolvimento de aplicações fornecendo 
                     ferramentas inteligentes de geração de PRDs (Product Requirement Documents), descrições de features 
@@ -620,7 +620,7 @@ export function SettingsContent({ user }: SettingsContentProps) {
                       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
                         Status
                       </p>
-                      <p className="text-sm font-medium text-green-600 dark:text-green-400">
+                      <p className="text-sm font-medium text-primary">
                         Em Produção
                       </p>
                     </div>
@@ -639,23 +639,23 @@ export function SettingsContent({ user }: SettingsContentProps) {
                   </p>
                   <ul className="space-y-2 text-sm">
                     <li className="flex items-start gap-2">
-                      <span className="text-blue-600 dark:text-blue-400 mt-1">•</span>
+                      <span className="text-primary mt-1">•</span>
                       <span>Geração automática de PRDs estruturados e profissionais</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-blue-600 dark:text-blue-400 mt-1">•</span>
+                      <span className="text-primary mt-1">•</span>
                       <span>Descrições detalhadas de features com especificações técnicas</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-blue-600 dark:text-blue-400 mt-1">•</span>
+                      <span className="text-primary mt-1">•</span>
                       <span>Sistemas de design completos com teoria de cores e psicologia visual</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-blue-600 dark:text-blue-400 mt-1">•</span>
+                      <span className="text-primary mt-1">•</span>
                       <span>Suporte a múltiplos provedores de IA (Gemini, OpenRouter)</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-blue-600 dark:text-blue-400 mt-1">•</span>
+                      <span className="text-primary mt-1">•</span>
                       <span>Gerenciamento de projetos e documentação centralizada</span>
                     </li>
                   </ul>

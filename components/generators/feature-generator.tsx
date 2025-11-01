@@ -197,10 +197,12 @@ export function FeatureGenerator() {
         warningMessage="Não feche esta janela ou troque de aba até a geração ser concluída, pois isso pode cancelar o processo."
       />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <Card className="shadow-lg">
+      <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-purple-600" />
+          <CardTitle className="flex items-center gap-2 text-gray-900">
+            <div className="p-2 rounded-lg bg-purple-100">
+              <Sparkles className="h-5 w-5 text-purple-600" />
+            </div>
             Descreva a Feature
           </CardTitle>
           <CardDescription>
@@ -217,7 +219,7 @@ export function FeatureGenerator() {
           <Button
             onClick={handleGenerate}
             disabled={loading || !input.trim()}
-            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+            className="w-full bg-gray-900 hover:bg-gray-800 text-white"
             size="lg"
           >
             {loading ? (
@@ -235,9 +237,9 @@ export function FeatureGenerator() {
         </CardContent>
       </Card>
 
-      <Card className="shadow-lg">
+      <Card>
         <CardHeader>
-          <CardTitle>Descrição Gerada</CardTitle>
+          <CardTitle className="text-gray-900">Descrição Gerada</CardTitle>
           <CardDescription>
             Documentação completa da feature
           </CardDescription>
@@ -255,14 +257,14 @@ export function FeatureGenerator() {
                   Download
                 </Button>
               </div>
-              <div className="border rounded-md p-4 bg-gray-50 dark:bg-gray-900 max-h-[600px] overflow-y-auto">
-                <pre className="whitespace-pre-wrap text-sm font-mono">
+              <div className="border border-gray-200/50 rounded-xl p-6 bg-white max-h-[600px] overflow-y-auto">
+                <pre className="whitespace-pre-wrap text-sm font-mono text-gray-700">
                   {output}
                 </pre>
               </div>
             </>
           ) : (
-            <div className="border rounded-md p-8 text-center text-gray-400 dark:text-gray-600">
+            <div className="border border-gray-200/50 rounded-xl p-8 text-center text-gray-400 bg-gray-50/50">
               A descrição aparecerá aqui após a geração
             </div>
           )}

@@ -99,25 +99,25 @@ export function ProjectsContent() {
       <Header />
       <div className="max-w-7xl mx-auto pt-6">
         <div className="mb-8 px-2">
-          <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent flex items-center gap-2">
+          <h1 className="text-3xl font-bold mb-2 text-foreground flex items-center gap-2">
             <FolderOpen className="h-8 w-8" />
             Meus Projetos
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-muted-foreground">
             Gerencie e visualize seus projetos salvos
           </p>
         </div>
 
         {loading ? (
           <div className="flex items-center justify-center py-16 px-4">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : projects.length === 0 ? (
           <Card className="shadow-lg mx-2">
             <CardContent className="py-16 text-center px-6">
-              <FolderOpen className="h-16 w-16 mx-auto text-gray-400 mb-4" />
+              <FolderOpen className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-xl font-semibold mb-2">Nenhum projeto salvo</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
+              <p className="text-muted-foreground mb-6">
                 Comece criando um novo projeto na página principal
               </p>
               <Button onClick={() => router.push("/")}>
@@ -138,7 +138,7 @@ export function ProjectsContent() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {project.project_data.description && (
-                    <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-3">
+                    <p className="text-sm text-muted-foreground line-clamp-3">
                       {project.project_data.description}
                     </p>
                   )}

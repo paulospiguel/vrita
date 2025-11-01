@@ -24,36 +24,36 @@ export function TabsLayout() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gray-50/50">
       <Header />
-      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 lg:py-8">
-        <div className="mb-6 sm:mb-8 text-center px-2">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+      <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8 lg:py-10">
+        <div className="mb-8 sm:mb-10 text-center px-2">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-3">
             Gerador de PRD Estruturado
           </h1>
-          <p className="text-sm sm:text-base lg:text-lg text-gray-600 dark:text-gray-400 px-2">
+          <p className="text-base sm:text-lg text-gray-600 px-2">
             Crie documentos profissionais para desenvolvimento de aplicações
           </p>
         </div>
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-4 sm:mb-6 lg:mb-8 h-auto">
+          <TabsList className="grid w-full grid-cols-3 mb-6 sm:mb-8 h-auto bg-white rounded-xl p-1.5 shadow-sm border border-gray-200/50">
             <TabsTrigger 
               value="prd" 
-              className="text-xs sm:text-sm lg:text-base font-semibold px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap"
+              className="text-xs sm:text-sm lg:text-base font-semibold px-3 sm:px-5 py-2.5 sm:py-3 whitespace-nowrap rounded-lg data-[state=active]:bg-gray-900 data-[state=active]:text-white data-[state=active]:shadow-sm transition-all"
             >
               <span className="hidden sm:inline">Gerador de PRD</span>
               <span className="sm:hidden">PRD</span>
             </TabsTrigger>
             <TabsTrigger 
               value="feature" 
-              className="text-xs sm:text-sm lg:text-base font-semibold px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap"
+              className="text-xs sm:text-sm lg:text-base font-semibold px-3 sm:px-5 py-2.5 sm:py-3 whitespace-nowrap rounded-lg data-[state=active]:bg-gray-900 data-[state=active]:text-white data-[state=active]:shadow-sm transition-all"
             >
               <span className="hidden sm:inline">Descrição de Feature</span>
               <span className="sm:hidden">Feature</span>
             </TabsTrigger>
             <TabsTrigger 
               value="designer" 
-              className="text-xs sm:text-sm lg:text-base font-semibold px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap"
+              className="text-xs sm:text-sm lg:text-base font-semibold px-3 sm:px-5 py-2.5 sm:py-3 whitespace-nowrap rounded-lg data-[state=active]:bg-gray-900 data-[state=active]:text-white data-[state=active]:shadow-sm transition-all"
             >
               <span className="hidden sm:inline">System Designer</span>
               <span className="sm:hidden">Designer</span>
