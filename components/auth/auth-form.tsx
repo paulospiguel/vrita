@@ -3,7 +3,6 @@
 import { useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Chrome } from "lucide-react"
 
 export function AuthForm() {
@@ -28,26 +27,26 @@ export function AuthForm() {
   }
 
   return (
-    <Card className="shadow-xl border-0">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-center">
-          Bem-vindo ao vRita AI
-        </CardTitle>
-        <CardDescription className="text-center">
-          Fa?a login para come?ar a gerar PRDs estruturados
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Button
-          onClick={handleGoogleLogin}
-          disabled={loading}
-          className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-6 text-base"
-          size="lg"
-        >
-          <Chrome className="mr-2 h-5 w-5" />
-          {loading ? "Carregando..." : "Continuar com Google"}
-        </Button>
-      </CardContent>
-    </Card>
+    <div className="w-full">
+      <Button
+        onClick={handleGoogleLogin}
+        disabled={loading}
+        className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-6 sm:py-7 text-base sm:text-lg shadow-lg hover:shadow-xl transition-all duration-300 group"
+        size="lg"
+      >
+        <Chrome className="mr-2 h-5 w-5 sm:h-6 sm:w-6 group-hover:scale-110 transition-transform" />
+        {loading ? (
+          <span className="flex items-center gap-2">
+            <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></span>
+            Carregando...
+          </span>
+        ) : (
+          "Continuar com Google"
+        )}
+      </Button>
+      <p className="text-xs sm:text-sm text-center text-gray-500 dark:text-gray-400 mt-4">
+        Ao continuar, você concorda com nossos termos de uso e política de privacidade
+      </p>
+    </div>
   )
 }

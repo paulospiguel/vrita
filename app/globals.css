@@ -57,3 +57,24 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Estilos para impressão/PDF */
+@media print {
+  @page {
+    size: A4;
+    margin: 20mm;
+  }
+  
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  /* Ocultar elementos que não devem ser impressos */
+  header,
+  nav,
+  button,
+  .no-print {
+    display: none !important;
+  }
+}
