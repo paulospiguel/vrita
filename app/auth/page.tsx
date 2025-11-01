@@ -70,7 +70,7 @@ export default function AuthPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50/50">
+    <div className="min-h-screen bg-background">
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-8 sm:py-12 lg:py-16">
         <div className="text-center mb-8 sm:mb-12 lg:mb-16">
@@ -80,17 +80,17 @@ export default function AuthPage() {
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-4 sm:mb-6 px-4">
             vRita AI
           </h1>
-          <p className="text-xl sm:text-2xl lg:text-3xl font-semibold text-gray-800 mb-4 px-4">
+          <p className="text-xl sm:text-2xl lg:text-3xl font-semibold text-foreground mb-4 px-4">
             Transforme suas ideias em documentação profissional
           </p>
-          <p className="text-base sm:text-lg lg:text-xl text-gray-600 max-w-2xl mx-auto px-4 mb-8 sm:mb-12">
+          <p className="text-base sm:text-lg lg:text-xl text-muted-foreground max-w-2xl mx-auto px-4 mb-8 sm:mb-12">
             Gere PRDs estruturados, documentação de features e sistemas de
             design completos com o poder da Inteligência Artificial
           </p>
 
           {/* CTA Hero */}
           <div className="max-w-md mx-auto px-4">
-            <div className="bg-white rounded-2xl shadow-[0_1px_3px_0px_rgba(0,0,0,0.05),0_1px_2px_-1px_rgba(0,0,0,0.05)] border border-gray-200/50 p-6 sm:p-8">
+            <div className="bg-card rounded-2xl shadow-sm border border-border p-6 sm:p-8">
               <AuthForm />
             </div>
           </div>
@@ -100,10 +100,10 @@ export default function AuthPage() {
       {/* Features Section */}
       <section className="container mx-auto px-4 py-12 sm:py-16 lg:py-20">
         <div className="text-center mb-12 sm:mb-16">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4">
             Tudo que você precisa em um só lugar
           </h2>
-          <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto">
             Ferramentas poderosas para criar documentação profissional de forma
             rápida e eficiente
           </p>
@@ -115,17 +115,17 @@ export default function AuthPage() {
             return (
               <div
                 key={index}
-                className="group relative bg-white rounded-xl p-6 sm:p-8 border border-gray-200/50 shadow-[0_1px_3px_0px_rgba(0,0,0,0.05),0_1px_2px_-1px_rgba(0,0,0,0.05)] hover:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1"
+                className="group relative bg-card rounded-xl p-6 sm:p-8 border border-border shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1"
               >
                 <div
                   className={`inline-flex p-3 sm:p-4 rounded-xl bg-gradient-to-br ${feature.color} mb-4 sm:mb-6 group-hover:scale-110 transition-transform duration-300 shadow-sm`}
                 >
                   <Icon className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
                 </div>
-                <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">
+                <h3 className="text-xl sm:text-2xl font-bold text-foreground mb-3">
                   {feature.title}
                 </h3>
-                <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
+                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
                   {feature.description}
                 </p>
               </div>
@@ -135,14 +135,14 @@ export default function AuthPage() {
       </section>
 
       {/* Benefits Section */}
-      <section className="bg-white border-y border-gray-200/50">
+      <section className="bg-card border-y border-border">
         <div className="container mx-auto px-4 py-12 sm:py-16 lg:py-20">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-12">
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4">
                 Por que escolher o vRita AI?
               </h2>
-              <p className="text-lg sm:text-xl text-gray-600">
+              <p className="text-lg sm:text-xl text-muted-foreground">
                 Benefícios reais para seu trabalho diário
               </p>
             </div>
@@ -151,10 +151,10 @@ export default function AuthPage() {
               {benefits.map((benefit, index) => (
                 <div
                   key={index}
-                  className="flex items-start gap-3 sm:gap-4 bg-white rounded-xl p-4 sm:p-5 border border-gray-200/50 shadow-sm"
+                  className="flex items-start gap-3 sm:gap-4 bg-background rounded-xl p-4 sm:p-5 border border-border shadow-sm"
                 >
                   <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6 text-green-500 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm sm:text-base text-gray-700 font-medium">
+                  <p className="text-sm sm:text-base text-foreground font-medium">
                     {benefit}
                   </p>
                 </div>
@@ -168,16 +168,16 @@ export default function AuthPage() {
       <section className="container mx-auto px-4 py-12 sm:py-16 lg:py-20">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
-            <Target className="h-12 w-12 sm:h-16 sm:w-16 mx-auto mb-6 text-green-600" />
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
+            <Target className="h-12 w-12 sm:h-16 sm:w-16 mx-auto mb-6 text-green-600 dark:text-green-400" />
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4">
               Sobre o Projeto
             </h2>
           </div>
 
           <div className="prose prose-lg max-w-none">
-            <div className="space-y-6 text-gray-700 text-base sm:text-lg leading-relaxed">
+            <div className="space-y-6 text-foreground text-base sm:text-lg leading-relaxed">
               <p>
-                O <strong className="text-green-600">vRita AI</strong> foi
+                O <strong className="text-green-600 dark:text-green-400">vRita AI</strong> foi
                 criado para revolucionar a forma como você cria documentação de
                 produtos. Sabemos que documentar ideias e requisitos pode ser um
                 processo demorado e repetitivo, por isso desenvolvemos uma
@@ -194,7 +194,7 @@ export default function AuthPage() {
 
               <p>Com o vRita AI, você pode:</p>
 
-              <ul className="space-y-3 list-disc list-inside marker:text-green-600 ml-4">
+              <ul className="space-y-3 list-disc list-inside marker:text-green-600 dark:marker:text-green-400 ml-4">
                 <li>
                   Transformar ideias simples em documentos profissionais
                   estruturados
@@ -222,16 +222,16 @@ export default function AuthPage() {
       {/* Final CTA */}
       <section className="container mx-auto px-4 py-12 sm:py-16 lg:py-20">
         <div className="max-w-3xl mx-auto text-center">
-          <div className="bg-gray-900 rounded-2xl p-8 sm:p-12 shadow-xl">
-            <Sparkles className="h-12 w-12 sm:h-16 sm:w-16 mx-auto mb-6 text-white" />
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 sm:mb-6">
+          <div className="bg-primary rounded-2xl p-8 sm:p-12 shadow-xl">
+            <Sparkles className="h-12 w-12 sm:h-16 sm:w-16 mx-auto mb-6 text-primary-foreground" />
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-primary-foreground mb-4 sm:mb-6">
               Pronto para começar?
             </h2>
-            <p className="text-lg sm:text-xl text-gray-300 mb-8 sm:mb-10 max-w-2xl mx-auto">
+            <p className="text-lg sm:text-xl text-primary-foreground/80 mb-8 sm:mb-10 max-w-2xl mx-auto">
               Faça login com sua conta Google e comece a criar documentação
               profissional em minutos
             </p>
-            <div className="bg-white rounded-xl p-6 sm:p-8">
+            <div className="bg-card rounded-xl p-6 sm:p-8">
               <AuthForm />
             </div>
           </div>
@@ -239,9 +239,9 @@ export default function AuthPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-gray-200/50 bg-white">
+      <footer className="border-t border-border bg-card">
         <div className="container mx-auto px-4 py-8 text-center">
-          <p className="text-sm sm:text-base text-gray-600">
+          <p className="text-sm sm:text-base text-muted-foreground">
             © {new Date().getFullYear()} vRita AI. Desenvolvido com ❤️ para
             facilitar sua documentação.
           </p>

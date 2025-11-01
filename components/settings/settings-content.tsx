@@ -93,6 +93,8 @@ export function SettingsContent({ user }: SettingsContentProps) {
       })),
   ];
 
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
   useEffect(() => {
     // Carregar configuração atual, status de assinatura e modelos personalizados
     const loadConfig = async () => {
@@ -107,8 +109,12 @@ export function SettingsContent({ user }: SettingsContentProps) {
 
         if (configResponse.ok) {
           const config = await configResponse.json();
-          setProvider(config.provider || "gemini");
-          setModel(config.model || "gemini-2.5-flash");
+          // Definir provider e model juntos para evitar race condition
+          const loadedProvider = config.provider || "gemini";
+          const loadedModel = config.model || "gemini-2.5-flash";
+          
+          setProvider(loadedProvider);
+          setModel(loadedModel);
           setApiKey(config.apiKey || "");
         }
 
@@ -129,13 +135,19 @@ export function SettingsContent({ user }: SettingsContentProps) {
         console.error("Erro ao carregar configuração:", error);
       } finally {
         setLoading(false);
+        setIsInitialLoad(false);
       }
     };
     loadConfig();
   }, []);
 
-  // Resetar modelo quando mudar provedor
+  // Resetar modelo quando mudar provedor (mas não durante o carregamento inicial)
   useEffect(() => {
+    // Não fazer reset durante o carregamento inicial
+    if (isInitialLoad || loading) {
+      return;
+    }
+
     const allModels = [
       ...getModelsByProvider(provider),
       ...customModels
@@ -147,10 +159,13 @@ export function SettingsContent({ user }: SettingsContentProps) {
           description: m.description,
         })),
     ];
-    if (allModels.length > 0 && !allModels.find((m) => m.id === model)) {
+    
+    // Só resetar se o modelo atual não existir na lista E não estiver vazio
+    // Isso evita resetar durante o carregamento inicial
+    if (allModels.length > 0 && model && !allModels.find((m) => m.id === model)) {
       setModel(allModels[0].id);
     }
-  }, [provider, model, customModels]);
+  }, [provider, model, customModels, isInitialLoad, loading]);
 
   const handleSave = async () => {
     if (!model) {

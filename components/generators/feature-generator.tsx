@@ -9,6 +9,7 @@ import { useProject } from "@/components/providers/project-context"
 import { useGeneration } from "@/components/providers/generation-context"
 import { GenerationModalGeneric } from "@/components/ui/generation-modal-generic"
 import { toast } from "sonner"
+import { formatDownloadFilename } from "@/lib/utils/filename"
 
 export function FeatureGenerator() {
   const { projectData } = useProject()
@@ -180,7 +181,7 @@ export function FeatureGenerator() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
     a.href = url
-    a.download = "feature-description.md"
+    a.download = formatDownloadFilename("feature_description", "md")
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -199,9 +200,9 @@ export function FeatureGenerator() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-gray-900">
-            <div className="p-2 rounded-lg bg-purple-100">
-              <Sparkles className="h-5 w-5 text-purple-600" />
+          <CardTitle className="flex items-center gap-2 text-foreground">
+            <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
+              <Sparkles className="h-5 w-5 text-purple-600 dark:text-purple-400" />
             </div>
             Descreva a Feature
           </CardTitle>
@@ -239,7 +240,7 @@ export function FeatureGenerator() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-gray-900">Descrição Gerada</CardTitle>
+          <CardTitle className="text-foreground">Descrição Gerada</CardTitle>
           <CardDescription>
             Documentação completa da feature
           </CardDescription>
@@ -257,14 +258,14 @@ export function FeatureGenerator() {
                   Download
                 </Button>
               </div>
-              <div className="border border-gray-200/50 rounded-xl p-6 bg-white max-h-[600px] overflow-y-auto">
-                <pre className="whitespace-pre-wrap text-sm font-mono text-gray-700">
+              <div className="border border-border rounded-xl p-6 bg-card max-h-[600px] overflow-y-auto">
+                <pre className="whitespace-pre-wrap text-sm font-mono text-foreground">
                   {output}
                 </pre>
               </div>
             </>
           ) : (
-            <div className="border border-gray-200/50 rounded-xl p-8 text-center text-gray-400 bg-gray-50/50">
+            <div className="border border-border rounded-xl p-8 text-center text-muted-foreground bg-muted/50">
               A descrição aparecerá aqui após a geração
             </div>
           )}

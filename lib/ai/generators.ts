@@ -1,16 +1,16 @@
 import type { ProjectData } from "@/components/providers/project-context"
 import { createAIProvider } from "./factory"
 import { getUserAIConfig } from "./config"
-import type { AIConfig } from "./types"
+import type { AIConfig, AIGenerateResult } from "./types"
 
 async function getAIConfigForUser(userId: string): Promise<AIConfig> {
   return await getUserAIConfig(userId)
 }
 
-export async function generatePRD(
+export async function generatePRDWithMetadata(
   projectData: ProjectData,
   userId: string
-): Promise<string> {
+): Promise<{ content: string; result: AIGenerateResult; config: AIConfig }> {
   const config = await getAIConfigForUser(userId)
   const provider = createAIProvider(config)
 
@@ -161,9 +161,11 @@ IMPORTANTE: Retorne o PRD em formato JSON estruturado seguindo este schema:
 
 Retorne APENAS o JSON válido, sem texto adicional antes ou depois.`
 
-  const text = await provider.generate({ prompt, maxTokens: 8192 })
+  const result = await provider.generate({ prompt, maxTokens: 8192 })
+  const text = result.content
 
   // Tentar extrair JSON da resposta
+  let finalContent: string
   try {
     // Remover markdown code blocks se existirem
     const jsonMatch =
@@ -172,22 +174,33 @@ Retorne APENAS o JSON válido, sem texto adicional antes ou depois.`
     if (jsonMatch) {
       const jsonStr = jsonMatch[1]
       const parsed = JSON.parse(jsonStr)
-      return JSON.stringify(parsed)
+      finalContent = JSON.stringify(parsed)
+    } else {
+      // Se não encontrar JSON, retornar texto original para compatibilidade
+      finalContent = text
     }
-    // Se não encontrar JSON, retornar texto original para compatibilidade
-    return text
   } catch (error) {
     console.error("Erro ao parsear JSON da resposta:", error)
     // Retornar texto original se falhar
-    return text
+    finalContent = text
   }
+
+  return { content: finalContent, result, config }
 }
 
-export async function generateFeatureDescription(
+export async function generatePRD(
+  projectData: ProjectData,
+  userId: string
+): Promise<string> {
+  const { content } = await generatePRDWithMetadata(projectData, userId)
+  return content
+}
+
+export async function generateFeatureDescriptionWithMetadata(
   input: string,
   userId: string,
   projectContext?: ProjectData
-): Promise<string> {
+): Promise<{ content: string; result: AIGenerateResult; config: AIConfig }> {
   const config = await getAIConfigForUser(userId)
   const provider = createAIProvider(config)
 
@@ -259,15 +272,25 @@ A descrição deve incluir:
 
 Retorne a descrição completa e detalhada.`
 
-  return await provider.generate({ prompt, maxTokens: 4096 })
+  const result = await provider.generate({ prompt, maxTokens: 4096 })
+  return { content: result.content, result, config }
 }
 
-export async function generateSystemDesigner(
+export async function generateFeatureDescription(
+  input: string,
+  userId: string,
+  projectContext?: ProjectData
+): Promise<string> {
+  const { content } = await generateFeatureDescriptionWithMetadata(input, userId, projectContext)
+  return content
+}
+
+export async function generateSystemDesignerWithMetadata(
   input: string,
   userId: string,
   projectContext?: ProjectData,
   importedDesignData?: string
-): Promise<string> {
+): Promise<{ content: string; result: AIGenerateResult; config: AIConfig }> {
   const config = await getAIConfigForUser(userId)
   const provider = createAIProvider(config)
 
@@ -394,6 +417,17 @@ O sistema de design deve incluir:
 
 Retorne o sistema de design completo e detalhado, com foco especial na teoria das cores e psicologia visual aplicada ao contexto do negócio.`
 
-  return await provider.generate({ prompt, maxTokens: 8192 })
+  const result = await provider.generate({ prompt, maxTokens: 8192 })
+  return { content: result.content, result, config }
+}
+
+export async function generateSystemDesigner(
+  input: string,
+  userId: string,
+  projectContext?: ProjectData,
+  importedDesignData?: string
+): Promise<string> {
+  const { content } = await generateSystemDesignerWithMetadata(input, userId, projectContext, importedDesignData)
+  return content
 }
 

@@ -43,6 +43,7 @@ import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
 import Lottie from "lottie-react";
 import aiThinkingAnimation from "@/assets/lottiefiles/ai-thincking.json";
+import { formatDownloadFilename } from "@/lib/utils/filename";
 
 export function SystemDesignerGenerator() {
   const { projectData } = useProject();
@@ -81,6 +82,14 @@ export function SystemDesignerGenerator() {
   const [importedProjectName, setImportedProjectName] = useState<string | null>(
     null
   );
+  const [urlValidation, setUrlValidation] = useState<{
+    valid: boolean;
+    title?: string;
+    description?: string;
+    domain?: string;
+    error?: string;
+    loading: boolean;
+  } | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const previousActiveGeneratorRef = useRef<typeof activeGenerator>(null);
   const isRestoringRef = useRef(false);
@@ -170,6 +179,48 @@ export function SystemDesignerGenerator() {
     updateGeneratorState("designer", { output });
   }, [output, activeGenerator, updateGeneratorState]);
 
+  const handleValidateUrl = async (urlToValidate: string) => {
+    if (!urlToValidate.trim()) {
+      setUrlValidation(null);
+      return;
+    }
+
+    setUrlValidation({ valid: false, loading: true });
+
+    try {
+      const response = await fetch("/api/validate-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: urlToValidate }),
+      });
+
+      const data = await response.json();
+
+      if (data.valid) {
+        setUrlValidation({
+          valid: true,
+          title: data.title,
+          description: data.description,
+          domain: data.domain,
+          loading: false,
+        });
+      } else {
+        setUrlValidation({
+          valid: false,
+          error: data.error || "URL inválida",
+          loading: false,
+        });
+      }
+    } catch (error: any) {
+      console.error("Erro ao validar URL:", error);
+      setUrlValidation({
+        valid: false,
+        error: "Erro ao validar URL. Tente novamente.",
+        loading: false,
+      });
+    }
+  };
+
   const handleImportDesign = async () => {
     if (!url.trim()) {
       toast.error("URL é obrigatória", {
@@ -204,11 +255,16 @@ export function SystemDesignerGenerator() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || "Erro ao extrair design do site");
+        const error = new Error(
+          errorData.error || "Erro ao extrair design do site"
+        );
+        (error as any).isRetryable = errorData.isRetryable || false;
+        throw error;
       }
 
       const data = await response.json();
       setImportedDesignData(data.analysis);
+      setUrlValidation(null); // Limpar validação após importar com sucesso
 
       // Preencher com uma descrição básica se não houver input
       if (!input.trim()) {
@@ -223,10 +279,17 @@ export function SystemDesignerGenerator() {
       });
     } catch (error: any) {
       console.error("Erro ao importar design:", error);
+      const isRetryable = error.name === "RetryableError" || error.isRetryable;
       toast.error("Erro ao importar design", {
         description:
           error.message ||
           "Tente novamente ou verifique se a URL está acessível.",
+        ...(isRetryable && {
+          action: {
+            label: "Tentar Novamente",
+            onClick: () => handleImportDesign(),
+          },
+        }),
       });
     } finally {
       setImporting(false);
@@ -262,13 +325,26 @@ export function SystemDesignerGenerator() {
         ) {
           throw new Error("SUBSCRIPTION_REQUIRED");
         }
-        throw new Error(errorData.error || "Erro ao gerar sistema de design");
+        const error = new Error(
+          errorData.error || "Erro ao gerar sistema de design"
+        );
+        (error as any).isRetryable = errorData.isRetryable || false;
+        throw error;
       }
 
       const data = await response.json();
       setOutput(data.content);
       updateGeneratorState("designer", { output: data.content });
       setModalStatus("completed");
+
+      // Limpar dados de importação após gerar com sucesso
+      if (importSource === "url") {
+        setImportSource(null);
+        setImportedDesignData(null);
+        setUrl("");
+        setUrlValidation(null);
+      }
+
       toast.success("Sistema de design gerado com sucesso!");
     } catch (error: any) {
       console.error(error);
@@ -282,9 +358,18 @@ export function SystemDesignerGenerator() {
             "Configure sua chave de API ou assine um plano para continuar.",
         });
       } else {
+        const isRetryable =
+          error.name === "RetryableError" || error.isRetryable;
         setErrorMessage(error.message || "Erro ao gerar sistema de design.");
         toast.error("Erro ao gerar sistema de design", {
-          description: "Tente novamente ou verifique sua conexão.",
+          description:
+            error.message || "Tente novamente ou verifique sua conexão.",
+          ...(isRetryable && {
+            action: {
+              label: "Tentar Novamente",
+              onClick: () => handleApplyDirectly(),
+            },
+          }),
         });
       }
     } finally {
@@ -327,6 +412,7 @@ export function SystemDesignerGenerator() {
     // Limpar dados de URL se existirem
     setUrl("");
     setImportedDesignData(null);
+    setUrlValidation(null);
     setImportSource("project");
     setImportedProjectName(project.name);
 
@@ -474,7 +560,9 @@ export function SystemDesignerGenerator() {
           errorData.message ||
           errorData.details ||
           "Erro ao gerar sistema de design";
-        throw new Error(errorMessage);
+        const error = new Error(errorMessage);
+        (error as any).isRetryable = errorData.isRetryable || false;
+        throw error;
       }
 
       const data = await response.json();
@@ -483,6 +571,15 @@ export function SystemDesignerGenerator() {
       setOutput(data.content);
       updateGeneratorState("designer", { output: data.content });
       setModalStatus("completed");
+
+      // Limpar dados de importação após gerar com sucesso
+      if (importSource === "url") {
+        setImportSource(null);
+        setImportedDesignData(null);
+        setUrl("");
+        setUrlValidation(null);
+      }
+
       toast.success("Sistema de design gerado com sucesso!");
     } catch (error: any) {
       // Ignorar erro se foi cancelado manualmente
@@ -508,11 +605,20 @@ export function SystemDesignerGenerator() {
           },
         });
       } else {
+        const isRetryable =
+          error.name === "RetryableError" || error.isRetryable;
         setErrorMessage(
           error.message || "Erro ao gerar sistema de design. Tente novamente."
         );
         toast.error("Erro ao gerar sistema de design", {
-          description: "Tente novamente ou verifique sua conexão.",
+          description:
+            error.message || "Tente novamente ou verifique sua conexão.",
+          ...(isRetryable && {
+            action: {
+              label: "Tentar Novamente",
+              onClick: () => handleGenerate(),
+            },
+          }),
         });
       }
     } finally {
@@ -593,9 +699,12 @@ Gere código completo, funcional e pronto para uso, seguindo as melhores prátic
     const a = document.createElement("a");
     a.href = url;
     const projectName = projectData.projectName || "system-designer";
-    a.download = `${projectName}-design-system.md`;
+    a.download = formatDownloadFilename(`${projectName}_design_system`, "md");
     a.click();
     URL.revokeObjectURL(url);
+    toast.success("Download iniciado!", {
+      description: "O arquivo será salvo em breve.",
+    });
   };
 
   const handleExportPDF = useReactToPrint({
@@ -629,11 +738,11 @@ Gere código completo, funcional e pronto para uso, seguindo as melhores prátic
       {/* Overlay para bloquear ações durante importação */}
       {importing && (
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center">
-          <div className="bg-card border border-border rounded-lg p-6 shadow-lg max-w-md mx-4 text-center">
+          <div className="bg-card border border-border rounded-lg p-4 shadow-lg max-w-md mx-4 text-center">
             <div className="flex justify-center mb-4">
               <Lottie
                 animationData={aiThinkingAnimation}
-                className="w-24 h-24"
+                className="w-32 h-32"
                 loop={true}
               />
             </div>
@@ -653,9 +762,9 @@ Gere código completo, funcional e pronto para uso, seguindo as melhores prátic
       >
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-gray-900">
-              <div className="p-2 rounded-lg bg-pink-100">
-                <Palette className="h-5 w-5 text-pink-600" />
+            <CardTitle className="flex items-center gap-2 text-foreground">
+              <div className="p-2 rounded-lg bg-pink-100 dark:bg-pink-900/30">
+                <Palette className="h-5 w-5 text-pink-600 dark:text-pink-400" />
               </div>
               Descreva o seu UI/UX Designer
             </CardTitle>
@@ -699,11 +808,11 @@ Gere código completo, funcional e pronto para uso, seguindo as melhores prátic
                     <>
                       <Globe className="h-5 w-5 text-green-600 dark:text-green-400" />
                       <div className="flex-1">
-                        <p className="text-sm font-semibold text-green-900 dark:text-green-100">
+                        <p className="text-sm font-semibold text-green-900 dark:text-green-800">
                           Importando de URL
                         </p>
                         {url && (
-                          <p className="text-xs text-green-700 dark:text-green-300 mt-0.5 truncate">
+                          <p className="text-xs text-green-700 dark:text-green-600 mt-0.5 truncate">
                             URL: {url}
                           </p>
                         )}
@@ -719,6 +828,7 @@ Gere código completo, funcional e pronto para uso, seguindo as melhores prátic
                       setUrl("");
                       setImportedDesignData(null);
                       setInput("");
+                      setUrlValidation(null);
                     }}
                     className="h-6 w-6 p-0"
                   >
@@ -772,9 +882,26 @@ Gere código completo, funcional e pronto para uso, seguindo as melhores prátic
                     type="url"
                     placeholder="https://exemplo.com"
                     value={url}
-                    onChange={(e) => setUrl(e.target.value)}
+                    onChange={(e) => {
+                      setUrl(e.target.value);
+                      // Limpar validação quando URL mudar
+                      if (urlValidation) {
+                        setUrlValidation(null);
+                      }
+                    }}
+                    onBlur={(e) => {
+                      if (e.target.value.trim()) {
+                        handleValidateUrl(e.target.value);
+                      }
+                    }}
                     className={`flex-1 ${
                       importSource === "url"
+                        ? "border-green-500 dark:border-green-400 ring-2 ring-green-500/20"
+                        : urlValidation &&
+                          !urlValidation.valid &&
+                          !urlValidation.loading
+                        ? "border-red-500 dark:border-red-400 ring-2 ring-red-500/20"
+                        : urlValidation && urlValidation.valid
                         ? "border-green-500 dark:border-green-400 ring-2 ring-green-500/20"
                         : ""
                     }`}
@@ -812,6 +939,81 @@ Gere código completo, funcional e pronto para uso, seguindo as melhores prátic
                     )}
                   </Button>
                 </div>
+                {urlValidation && !importedDesignData && (
+                  <div
+                    className={`p-3 rounded-lg border flex items-start justify-between gap-2 ${
+                      urlValidation.loading
+                        ? "bg-blue-50 dark:bg-blue-950/20 border-blue-500 dark:border-blue-400"
+                        : urlValidation.valid
+                        ? "bg-green-400 dark:bg-green-600/85 border-green-700 dark:border-green-400"
+                        : "bg-red-50 dark:bg-red-950/20 border-red-500 dark:border-red-400"
+                    }`}
+                  >
+                    <div className="flex items-start gap-2 flex-1">
+                      {urlValidation.loading ? (
+                        <Loader2 className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0 animate-spin" />
+                      ) : urlValidation.valid ? (
+                        <CheckCircle2 className="h-4 w-4 text-green-800 dark:text-green-400 mt-0.5 flex-shrink-0" />
+                      ) : (
+                        <X className="h-4 w-4 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
+                      )}
+                      <div className="flex-1">
+                        {urlValidation.loading ? (
+                          <p className="text-xs text-muted-foreground">
+                            <strong className="text-blue-900 dark:text-blue-100">
+                              Validando URL...
+                            </strong>
+                          </p>
+                        ) : urlValidation.valid ? (
+                          <>
+                            <p className="text-xs text-muted-foreground">
+                              <strong className="text-green-900 dark:text-green-100">
+                                URL válida
+                              </strong>
+                            </p>
+                            {urlValidation.title && (
+                              <p className="text-xs font-semibold text-green-900 dark:text-green-100 mt-1">
+                                {urlValidation.title}
+                              </p>
+                            )}
+                            {urlValidation.domain && (
+                              <p className="text-xs text-green-700 dark:text-green-300 mt-0.5">
+                                {urlValidation.domain}
+                              </p>
+                            )}
+                            {urlValidation.description && (
+                              <p className="text-xs text-green-700 dark:text-green-300 mt-1 line-clamp-2">
+                                {urlValidation.description}
+                              </p>
+                            )}
+                          </>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">
+                            <strong className="text-red-900 dark:text-red-100">
+                              URL inválida
+                            </strong>
+                            {urlValidation.error && (
+                              <span className="block text-red-700 dark:text-red-300 mt-0.5">
+                                {urlValidation.error}
+                              </span>
+                            )}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    {!urlValidation.loading && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 flex-shrink-0"
+                        onClick={() => setUrlValidation(null)}
+                        title="Fechar"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                )}
                 {importedDesignData && (
                   <div className="p-3 bg-accent rounded-lg border border-border flex items-start justify-between gap-2">
                     <div className="flex items-start gap-2 flex-1">
@@ -844,6 +1046,7 @@ Gere código completo, funcional e pronto para uso, seguindo as melhores prátic
                           setImportedDesignData(null);
                           setUrl("");
                           setImportSource(null);
+                          setUrlValidation(null);
                           toast.info("Design importado removido");
                         }}
                         title="Remover design importado"
@@ -899,7 +1102,7 @@ Gere código completo, funcional e pronto para uso, seguindo as melhores prátic
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-gray-900">
+                <CardTitle className="text-foreground">
                   Sistema de Design Preview
                 </CardTitle>
                 <CardDescription>
@@ -1007,7 +1210,7 @@ Gere código completo, funcional e pronto para uso, seguindo as melhores prátic
                 </div>
 
                 {/* Conteúdo visível na tela */}
-                <div className="border border-gray-200/50 rounded-xl p-6 bg-white max-h-[600px] overflow-y-auto">
+                <div className="border border-border rounded-xl p-6 bg-card max-h-[600px] overflow-y-auto">
                   <div
                     className="prose prose-sm dark:prose-invert max-w-none
                   prose-headings:scroll-mt-20
@@ -1035,9 +1238,9 @@ Gere código completo, funcional e pronto para uso, seguindo as melhores prátic
                 </div>
 
                 {/* Seção Prompt para AI */}
-                <div className="mt-6 pt-6 border-t border-gray-200/50">
+                <div className="mt-6 pt-6 border-t border-border">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                    <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
                       <Sparkles className="h-5 w-5 text-pink-600 dark:text-pink-400" />
                       Prompt para AI
                     </h3>
@@ -1068,14 +1271,14 @@ Gere código completo, funcional e pronto para uso, seguindo as melhores prátic
                     implementação baseado no sistema de design acima.
                   </p>
                   <div className="relative">
-                    <pre className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4 overflow-x-auto text-xs text-gray-800 dark:text-gray-200 font-mono leading-relaxed whitespace-pre-wrap">
+                    <pre className="bg-muted border border-border rounded-lg p-4 overflow-x-auto text-xs text-foreground font-mono leading-relaxed whitespace-pre-wrap">
                       {generateAIPrompt()}
                     </pre>
                   </div>
                 </div>
               </>
             ) : (
-              <div className="border border-gray-200/50 rounded-xl p-8 text-center text-gray-400 bg-gray-50/50">
+              <div className="border border-border rounded-xl p-8 text-center text-muted-foreground bg-muted/50">
                 O sistema de design aparecerá aqui após a geração
               </div>
             )}

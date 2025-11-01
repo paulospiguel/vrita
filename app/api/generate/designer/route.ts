@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { generateSystemDesigner } from "@/lib/ai/generators"
+import { generateSystemDesignerWithMetadata } from "@/lib/ai/generators"
 import { getUserAIConfig } from "@/lib/ai/config"
 import { canUseServerAIKey } from "@/lib/subscription/subscription"
+import { saveAIUsageFromResult } from "@/lib/ai/usage-history"
 import type { ProjectData } from "@/components/providers/project-context"
 
 export async function POST(request: NextRequest) {
@@ -39,12 +40,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const content = await generateSystemDesigner(
+    const { content, result, config } = await generateSystemDesignerWithMetadata(
       input, 
       user.id, 
       projectContext as ProjectData | undefined,
       importedDesignData as string | undefined
     )
+
+    // Salvar histórico de uso de AI
+    await saveAIUsageFromResult(user.id, config.provider, config.model, "designer", result)
 
     return NextResponse.json({ content })
   } catch (error: any) {
@@ -52,11 +56,13 @@ export async function POST(request: NextRequest) {
     
     // Retornar mensagem de erro mais detalhada
     const errorMessage = error.message || "Erro ao gerar sistema de design"
+    const isRetryable = error.name === "RetryableError" || error.isRetryable || false
     
     return NextResponse.json(
       { 
         error: errorMessage,
-        details: error.message 
+        details: error.message,
+        isRetryable
       },
       { status: 500 }
     )

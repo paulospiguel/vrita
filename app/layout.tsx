@@ -4,6 +4,7 @@ import "./globals.css"
 import { AuthProvider } from "@/components/providers/auth-provider"
 import { ProjectProvider } from "@/components/providers/project-context"
 import { GenerationProvider } from "@/components/providers/generation-context"
+import { ThemeProvider } from "@/components/providers/theme-provider"
 import { Toaster } from "sonner"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -19,16 +20,23 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" suppressHydrationWarning>
       <body className={inter.className}>
-        <AuthProvider>
-          <ProjectProvider>
-            <GenerationProvider>
-              {children}
-              <Toaster position="top-right" richColors />
-            </GenerationProvider>
-          </ProjectProvider>
-        </AuthProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AuthProvider>
+            <ProjectProvider>
+              <GenerationProvider>
+                {children}
+                <Toaster position="top-right" richColors />
+              </GenerationProvider>
+            </ProjectProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

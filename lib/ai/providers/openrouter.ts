@@ -1,5 +1,6 @@
 import OpenAI from "openai"
-import type { AIProviderInterface, AIGenerateOptions } from "../types"
+import type { AIProviderInterface, AIGenerateOptions, AIGenerateResult } from "../types"
+import { RetryableError } from "../errors"
 
 export class OpenRouterProvider implements AIProviderInterface {
   private client: OpenAI
@@ -17,7 +18,7 @@ export class OpenRouterProvider implements AIProviderInterface {
     })
   }
 
-  async generate(options: AIGenerateOptions): Promise<string> {
+  async generate(options: AIGenerateOptions): Promise<AIGenerateResult> {
     try {
       const completion = await this.client.chat.completions.create({
         model: this.modelName,
@@ -41,8 +42,59 @@ export class OpenRouterProvider implements AIProviderInterface {
         throw new Error("A resposta da API não contém conteúdo válido.")
       }
 
-      return content
+      // Obter informações de tokens da resposta
+      const usage = completion.usage
+      const promptTokens = usage?.prompt_tokens || 0
+      const completionTokens = usage?.completion_tokens || 0
+      const totalTokens = usage?.total_tokens || (promptTokens + completionTokens)
+
+      // Obter custo da resposta (OpenRouter retorna em headers ou no body)
+      // O OpenRouter às vezes retorna o custo, mas como não está sempre disponível,
+      // vamos calcular um estimativo baseado em preços médios conhecidos
+      let costUsd: number | undefined
+      if (totalTokens > 0) {
+        // Tentar obter custo real da resposta se disponível
+        // Nota: OpenRouter pode retornar custo em diferentes formatos
+        const responseCost = (completion as any).usage?.cost
+        if (responseCost !== undefined) {
+          costUsd = Number(responseCost.toFixed(6))
+        }
+        // Se não houver custo na resposta, deixar undefined (pode ser calculado depois)
+      }
+
+      return {
+        content,
+        tokensUsed: totalTokens,
+        promptTokens,
+        completionTokens,
+        costUsd,
+      }
     } catch (error: any) {
+      // Verificar se é um erro do tipo OpenAI (resposta com error no body)
+      if (error?.error?.code || error?.error?.message) {
+        const errorCode = error.error.code
+        const errorMessage = error.error.message || "Erro desconhecido"
+        const providerName = error.error.metadata?.provider_name || "provedor"
+        
+        console.error("OpenRouter API Error:", {
+          code: errorCode,
+          message: errorMessage,
+          provider: providerName,
+          model: this.modelName,
+        })
+
+        // Erro 502 - Bad Gateway (geralmente temporário, pode ser retentado)
+        if (errorCode === 502) {
+          throw new RetryableError(
+            `Ocorreu um erro temporário ao processar sua solicitação. O provedor ${providerName} está enfrentando problemas técnicos. Por favor, tente novamente em alguns instantes.`,
+            true
+          )
+        }
+
+        // Outros erros de código
+        throw new Error(`Erro na API OpenRouter (${providerName}): ${errorMessage}`)
+      }
+
       // Tratamento de erros específicos da biblioteca OpenAI
       if (error?.status || error?.code) {
         const status = error.status
@@ -99,7 +151,13 @@ export class OpenRouterProvider implements AIProviderInterface {
             }
           }
           
-          throw new Error(errorMessage)
+          throw new RetryableError(errorMessage, true)
+        } else if (status === 502 || status === 503) {
+          // Erros 502/503 - Bad Gateway / Service Unavailable (geralmente temporários)
+          throw new RetryableError(
+            "O serviço de IA está temporariamente indisponível. Por favor, tente novamente em alguns instantes.",
+            true
+          )
         } else {
           throw new Error(`Erro na API OpenRouter: ${message}`)
         }

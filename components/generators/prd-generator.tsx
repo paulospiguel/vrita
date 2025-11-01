@@ -15,7 +15,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TagsInput } from "@/components/ui/tags-input";
-import { Sparkles, Copy, FileDown, FileText, CheckCircle2, Save } from "lucide-react";
+import {
+  Sparkles,
+  Copy,
+  FileDown,
+  FileText,
+  CheckCircle2,
+  Save,
+  PrinterIcon,
+} from "lucide-react";
 import {
   useProject,
   type ProjectData,
@@ -26,9 +34,15 @@ import { GenerationModal } from "@/components/ui/generation-modal";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
+import { formatDownloadFilename } from "@/lib/utils/filename";
 
 export function PRDGenerator() {
-  const { projectData, currentProjectId, updateProjectData, setCurrentProjectId } = useProject();
+  const {
+    projectData,
+    currentProjectId,
+    updateProjectData,
+    setCurrentProjectId,
+  } = useProject();
   const [output, setOutput] = useState("");
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -69,11 +83,18 @@ export function PRDGenerator() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        if (response.status === 402 && errorData.code === "SUBSCRIPTION_REQUIRED") {
+        if (
+          response.status === 402 &&
+          errorData.code === "SUBSCRIPTION_REQUIRED"
+        ) {
           throw new Error("SUBSCRIPTION_REQUIRED");
         }
         // Usar error ou details, o que estiver disponível
-        const errorMessage = errorData.error || errorData.message || errorData.details || "Erro ao gerar PRD";
+        const errorMessage =
+          errorData.error ||
+          errorData.message ||
+          errorData.details ||
+          "Erro ao gerar PRD";
         throw new Error(errorMessage);
       }
 
@@ -109,13 +130,16 @@ export function PRDGenerator() {
       console.error(error);
       setModalStatus("error");
       if (error.message === "SUBSCRIPTION_REQUIRED") {
-        setErrorMessage("Assinatura necessária para usar a chave de IA do servidor. Configure sua própria chave nas configurações ou assine um plano.");
+        setErrorMessage(
+          "Assinatura necessária para usar a chave de IA do servidor. Configure sua própria chave nas configurações ou assine um plano."
+        );
         toast.error("Assinatura necessária", {
-          description: "Configure sua chave de API ou assine um plano para continuar.",
+          description:
+            "Configure sua chave de API ou assine um plano para continuar.",
           action: {
             label: "Ver Planos",
-            onClick: () => window.location.href = "/subscription"
-          }
+            onClick: () => (window.location.href = "/subscription"),
+          },
         });
       } else {
         setErrorMessage(error.message || "Erro ao gerar PRD. Tente novamente.");
@@ -142,7 +166,10 @@ export function PRDGenerator() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${projectData.projectName || "prd"}-document.md`;
+    a.download = formatDownloadFilename(
+      `${projectData.projectName || "prd"}_document`,
+      "md"
+    );
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -163,14 +190,12 @@ export function PRDGenerator() {
 
     setSaving(true);
     const isUpdate = !!currentProjectId;
-    
+
     try {
-      const url = isUpdate 
-        ? "/api/projects" 
-        : "/api/projects";
-      
+      const url = isUpdate ? "/api/projects" : "/api/projects";
+
       const method = isUpdate ? "PUT" : "POST";
-      
+
       const body = isUpdate
         ? {
             id: currentProjectId,
@@ -190,19 +215,30 @@ export function PRDGenerator() {
         body: JSON.stringify(body),
       });
 
-      if (!response.ok) throw new Error(`Erro ao ${isUpdate ? "atualizar" : "salvar"} projeto`);
+      if (!response.ok)
+        throw new Error(`Erro ao ${isUpdate ? "atualizar" : "salvar"} projeto`);
 
       const data = await response.json();
-      
+
       // Se foi criação, salvar o ID do projeto criado
       if (!isUpdate && data.project?.id) {
         setCurrentProjectId(data.project.id);
       }
-      
-      toast.success(isUpdate ? "Projeto atualizado com sucesso!" : "Projeto salvo com sucesso!", {
-        description: `"${projectData.projectName}" foi ${isUpdate ? "atualizado" : "salvo"} corretamente.`,
-      });
-      console.log(isUpdate ? "Projeto atualizado:" : "Projeto salvo:", data.project);
+
+      toast.success(
+        isUpdate
+          ? "Projeto atualizado com sucesso!"
+          : "Projeto salvo com sucesso!",
+        {
+          description: `"${projectData.projectName}" foi ${
+            isUpdate ? "atualizado" : "salvo"
+          } corretamente.`,
+        }
+      );
+      console.log(
+        isUpdate ? "Projeto atualizado:" : "Projeto salvo:",
+        data.project
+      );
     } catch (error) {
       console.error(error);
       toast.error(`Erro ao ${isUpdate ? "atualizar" : "salvar"} projeto`, {
@@ -229,17 +265,17 @@ export function PRDGenerator() {
   useEffect(() => {
     const savedProject = localStorage.getItem("selectedProject");
     const savedProjectId = localStorage.getItem("selectedProjectId");
-    
+
     if (savedProject) {
       try {
         const parsed = JSON.parse(savedProject);
         updateProjectData(parsed);
-        
+
         // Carregar ID do projeto se existir
         if (savedProjectId) {
           setCurrentProjectId(savedProjectId);
         }
-        
+
         localStorage.removeItem("selectedProject"); // Limpar após carregar
         localStorage.removeItem("selectedProjectId"); // Limpar após carregar
       } catch (error) {
@@ -260,9 +296,9 @@ export function PRDGenerator() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-gray-900">
-              <div className="p-2 rounded-lg bg-green-100">
-                <Sparkles className="h-5 w-5 text-green-600" />
+            <CardTitle className="flex items-center gap-2 text-foreground">
+              <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
+                <Sparkles className="h-5 w-5 text-green-600 dark:text-green-400" />
               </div>
               Informações do Projeto
             </CardTitle>
@@ -273,9 +309,19 @@ export function PRDGenerator() {
           </CardHeader>
           <CardContent className="space-y-6">
             <Tabs defaultValue="vision" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-4 bg-gray-100 rounded-xl p-1">
-                <TabsTrigger value="vision" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Visão Geral</TabsTrigger>
-                <TabsTrigger value="details" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Detalhes</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 mb-4 bg-muted rounded-xl p-1">
+                <TabsTrigger
+                  value="vision"
+                  className="rounded-lg data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                >
+                  Visão Geral
+                </TabsTrigger>
+                <TabsTrigger
+                  value="details"
+                  className="rounded-lg data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                >
+                  Detalhes
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="vision" className="space-y-4">
@@ -415,12 +461,20 @@ export function PRDGenerator() {
               >
                 <Save className="mr-2 h-4 w-4" />
                 <span className="hidden sm:inline">
-                  {saving 
-                    ? (currentProjectId ? "Atualizando..." : "Salvando...") 
-                    : (currentProjectId ? "Atualizar Projeto" : "Salvar Projeto")}
+                  {saving
+                    ? currentProjectId
+                      ? "Atualizando..."
+                      : "Salvando..."
+                    : currentProjectId
+                    ? "Atualizar Projeto"
+                    : "Salvar Projeto"}
                 </span>
                 <span className="sm:hidden">
-                  {saving ? (currentProjectId ? "Atualizando..." : "Salvando...") : "Salvar"}
+                  {saving
+                    ? currentProjectId
+                      ? "Atualizando..."
+                      : "Salvando..."
+                    : "Salvar"}
                 </span>
               </Button>
               <Button
@@ -443,9 +497,7 @@ export function PRDGenerator() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-gray-900">
-              PRD Preview
-            </CardTitle>
+            <CardTitle className="text-foreground">PRD Preview</CardTitle>
             <CardDescription>
               Documento estruturado pronto para uso
             </CardDescription>
@@ -454,7 +506,12 @@ export function PRDGenerator() {
             {output ? (
               <>
                 <div className="flex gap-2 flex-wrap">
-                  <Button onClick={handleCopy} variant="outline" size="sm" className="flex-1 sm:flex-initial">
+                  <Button
+                    onClick={handleCopy}
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 sm:flex-initial"
+                  >
                     {copied ? (
                       <>
                         <CheckCircle2 className="h-4 w-4 sm:mr-2" />
@@ -474,12 +531,17 @@ export function PRDGenerator() {
                     size="sm"
                     className="flex-1 sm:flex-initial"
                   >
-                    <FileText className="h-4 w-4 sm:mr-2" />
+                    <FileDown className="h-4 w-4 sm:mr-2" />
                     <span className="hidden sm:inline">Markdown</span>
                     <span className="sm:hidden">MD</span>
                   </Button>
-                  <Button onClick={handleExportPDF} variant="outline" size="sm" className="flex-1 sm:flex-initial">
-                    <FileDown className="h-4 w-4 sm:mr-2" />
+                  <Button
+                    onClick={handleExportPDF}
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 sm:flex-initial"
+                  >
+                    <PrinterIcon className="h-4 w-4 sm:mr-2" />
                     <span className="hidden sm:inline">Exportar PDF</span>
                     <span className="sm:hidden">PDF</span>
                   </Button>
@@ -517,7 +579,7 @@ export function PRDGenerator() {
                 </div>
 
                 {/* Conteúdo visível na tela */}
-                <div className="border border-gray-200/50 rounded-xl p-6 bg-white max-h-[600px] overflow-y-auto">
+                <div className="border border-border rounded-xl p-6 bg-card max-h-[600px] overflow-y-auto">
                   <div
                     className="prose prose-sm dark:prose-invert max-w-none
                     prose-headings:scroll-mt-20
@@ -545,7 +607,7 @@ export function PRDGenerator() {
                 </div>
               </>
             ) : (
-              <div className="border border-gray-200/50 rounded-xl p-8 text-center text-gray-400 bg-gray-50/50">
+              <div className="border border-border rounded-xl p-8 text-center text-muted-foreground bg-muted/50">
                 O PRD aparecerá aqui após preencher as informações
               </div>
             )}

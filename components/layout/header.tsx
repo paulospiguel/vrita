@@ -8,6 +8,7 @@ import { Logo } from "@/components/ui/logo";
 import { createClient } from "@/lib/supabase/client";
 import { Settings, LogOut, FolderOpen, Menu, X } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 export function Header() {
   const pathname = usePathname();
@@ -50,6 +51,7 @@ export function Header() {
                 <span className="lg:hidden">Config</span>
               </Button>
             </Link>
+            <ThemeToggle />
             <Button
               variant="ghost"
               size="sm"
@@ -100,6 +102,9 @@ export function Header() {
                 Configurações
               </Button>
             </Link>
+            <div className="px-2 py-1">
+              <ThemeToggle />
+            </div>
             <Button
               variant="ghost"
               size="sm"

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { generatePRD } from "@/lib/ai/generators"
+import { generatePRDWithMetadata } from "@/lib/ai/generators"
 import { getUserAIConfig } from "@/lib/ai/config"
 import { canUseServerAIKey } from "@/lib/subscription/subscription"
+import { saveAIUsageFromResult } from "@/lib/ai/usage-history"
 import type { ProjectData } from "@/components/providers/project-context"
 
 export async function POST(request: NextRequest) {
@@ -39,7 +40,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const response = await generatePRD(projectData as ProjectData, user.id)
+    const { content: response, result, config } = await generatePRDWithMetadata(projectData as ProjectData, user.id)
+    
+    // Salvar histórico de uso de AI
+    await saveAIUsageFromResult(user.id, config.provider, config.model, "prd", result)
     
     // Tentar parsear como JSON
     let content: string
@@ -67,11 +71,13 @@ export async function POST(request: NextRequest) {
     
     // Retornar mensagem de erro mais detalhada
     const errorMessage = error.message || "Erro ao gerar PRD"
+    const isRetryable = error.name === "RetryableError" || error.isRetryable || false
     
     return NextResponse.json(
       { 
         error: errorMessage,
-        details: error.message 
+        details: error.message,
+        isRetryable
       },
       { status: 500 }
     )

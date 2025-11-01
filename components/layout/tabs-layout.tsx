@@ -23,14 +23,14 @@ export function TabsLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50/50">
+    <div className="min-h-screen bg-background">
       <Header />
       <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8 lg:py-10">
         <div className="mb-8 sm:mb-10 text-center px-2">
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-3">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-3">
             Gerador de PRD Estruturado
           </h1>
-          <p className="text-base sm:text-lg text-gray-600 px-2">
+          <p className="text-base sm:text-lg text-muted-foreground px-2">
             Crie documentos profissionais para desenvolvimento de aplicações
           </p>
         </div>
@@ -39,17 +39,17 @@ export function TabsLayout() {
           onValueChange={handleTabChange}
           className="w-full"
         >
-          <TabsList className="grid w-full grid-cols-2 mb-6 sm:mb-8 h-auto bg-white rounded-xl p-1.5 shadow-sm border border-gray-200/50">
+          <TabsList className="grid w-full grid-cols-2 mb-6 sm:mb-8 h-auto bg-card rounded-xl p-1.5 shadow-sm border border-border">
             <TabsTrigger
               value="prd"
-              className="text-xs sm:text-sm lg:text-base font-semibold px-3 sm:px-5 py-2.5 sm:py-3 whitespace-nowrap rounded-lg data-[state=active]:bg-gray-900 data-[state=active]:text-white data-[state=active]:shadow-sm transition-all"
+              className="text-xs sm:text-sm lg:text-base font-semibold px-3 sm:px-5 py-2.5 sm:py-3 whitespace-nowrap rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm transition-all"
             >
               <span className="hidden sm:inline">Gerador de PRD</span>
               <span className="sm:hidden">PRD</span>
             </TabsTrigger>
             <TabsTrigger
               value="designer"
-              className="text-xs sm:text-sm lg:text-base font-semibold px-3 sm:px-5 py-2.5 sm:py-3 whitespace-nowrap rounded-lg data-[state=active]:bg-gray-900 data-[state=active]:text-white data-[state=active]:shadow-sm transition-all"
+              className="text-xs sm:text-sm lg:text-base font-semibold px-3 sm:px-5 py-2.5 sm:py-3 whitespace-nowrap rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm transition-all"
             >
               <span className="hidden sm:inline">UI/UX Designer</span>
               <span className="sm:hidden">UI/UX</span>

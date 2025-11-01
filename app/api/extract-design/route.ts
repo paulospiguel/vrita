@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server"
 import { getUserAIConfig } from "@/lib/ai/config"
 import { createAIProvider } from "@/lib/ai/factory"
 import { canUseServerAIKey } from "@/lib/subscription/subscription"
+import { saveAIUsageFromResult } from "@/lib/ai/usage-history"
 
 export async function POST(request: NextRequest) {
   try {
@@ -127,24 +128,29 @@ Extraia e documente os seguintes elementos de design de forma estruturada:
 
 Retorne uma análise extremamente detalhada e estruturada que possa ser usada diretamente como base para criar um sistema de design completo. Seja o mais específico possível sobre valores, padrões e decisões de design.`
 
-    const analysis = await provider.generate({ 
+    const result = await provider.generate({ 
       prompt: extractionPrompt, 
       maxTokens: 4096 
     })
 
+    // Salvar histórico de uso de AI
+    await saveAIUsageFromResult(user.id, aiConfig.provider, aiConfig.model, "extract-design", result)
+
     return NextResponse.json({ 
-      analysis,
+      analysis: result.content,
       url 
     })
   } catch (error: any) {
     console.error("Erro ao extrair design:", error)
     
     const errorMessage = error.message || "Erro ao extrair design do site"
+    const isRetryable = error.name === "RetryableError" || error.isRetryable || false
     
     return NextResponse.json(
       { 
         error: errorMessage,
-        details: error.message 
+        details: error.message,
+        isRetryable
       },
       { status: 500 }
     )

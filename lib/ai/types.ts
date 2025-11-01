@@ -19,7 +19,15 @@ export interface AIGenerateOptions {
   temperature?: number
 }
 
+export interface AIGenerateResult {
+  content: string
+  tokensUsed?: number
+  promptTokens?: number
+  completionTokens?: number
+  costUsd?: number
+}
+
 export interface AIProviderInterface {
-  generate(options: AIGenerateOptions): Promise<string>
+  generate(options: AIGenerateOptions): Promise<AIGenerateResult>
 }
 
