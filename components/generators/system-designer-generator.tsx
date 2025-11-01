@@ -656,7 +656,7 @@ Gere código completo, funcional e pronto para uso, seguindo as melhores prátic
               ) : (
                 <>
                   <Palette className="mr-2 h-4 w-4" />
-                  Gerar System Designer com IA
+                  Gerar UI/UX Designer com IA
                 </>
               )}
             </Button>

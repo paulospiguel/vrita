@@ -15,7 +15,7 @@ export default async function SettingsPage() {
 
     return (
       <main className="min-h-screen bg-background">
-        <div className="container mx-auto py-8 px-4">
+        <div className="container mx-auto py-6 sm:py-8 px-4">
           <SettingsContent user={user} />
         </div>
       </main>

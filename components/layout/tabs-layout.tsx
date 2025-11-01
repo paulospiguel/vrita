@@ -59,8 +59,8 @@ export function TabsLayout() {
               value="designer"
               className="text-xs sm:text-sm lg:text-base font-semibold px-3 sm:px-5 py-2.5 sm:py-3 whitespace-nowrap rounded-lg data-[state=active]:bg-gray-900 data-[state=active]:text-white data-[state=active]:shadow-sm transition-all"
             >
-              <span className="hidden sm:inline">System Designer</span>
-              <span className="sm:hidden">Designer</span>
+              <span className="hidden sm:inline">UI/UX Designer</span>
+              <span className="sm:hidden">UI/UX</span>
             </TabsTrigger>
           </TabsList>
           <TabsContent value="prd" className="mt-0">

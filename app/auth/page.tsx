@@ -32,7 +32,7 @@ export default function AuthPage() {
     },
     {
       icon: Palette,
-      title: "System Designer",
+      title: "UI/UX Designer",
       description:
         "Crie sistemas de design completos com teoria das cores, psicologia visual e guias de estilo profissionais.",
       color: "from-pink-500 to-rose-600",
