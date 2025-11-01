@@ -24,6 +24,8 @@ import {
   X,
   Eye,
   Upload,
+  FolderOpen,
+  Calendar,
 } from "lucide-react";
 import { useProject } from "@/components/providers/project-context";
 import { useGeneration } from "@/components/providers/generation-context";
@@ -63,6 +65,22 @@ export function SystemDesignerGenerator() {
   );
   const [showDesignDataModal, setShowDesignDataModal] = useState(false);
   const [applyingDirectly, setApplyingDirectly] = useState(false);
+  const [showProjectsModal, setShowProjectsModal] = useState(false);
+  const [projects, setProjects] = useState<
+    Array<{
+      id: string;
+      name: string;
+      project_data: any;
+      created_at: string;
+    }>
+  >([]);
+  const [loadingProjects, setLoadingProjects] = useState(false);
+  const [importSource, setImportSource] = useState<"project" | "url" | null>(
+    null
+  );
+  const [importedProjectName, setImportedProjectName] = useState<string | null>(
+    null
+  );
   const abortControllerRef = useRef<AbortController | null>(null);
   const previousActiveGeneratorRef = useRef<typeof activeGenerator>(null);
   const isRestoringRef = useRef(false);
@@ -171,6 +189,11 @@ export function SystemDesignerGenerator() {
       return;
     }
 
+    // Limpar dados de projeto se existirem
+    setInput("");
+    setImportedProjectName(null);
+    setImportSource("url");
+
     setImporting(true);
     try {
       const response = await fetch("/api/extract-design", {
@@ -187,7 +210,7 @@ export function SystemDesignerGenerator() {
       const data = await response.json();
       setImportedDesignData(data.analysis);
 
-      // Se não houver input, preencher com uma descrição básica
+      // Preencher com uma descrição básica se não houver input
       if (!input.trim()) {
         setInput(
           `Analise o design do site ${url} e crie um sistema de design baseado nos elementos encontrados.`
@@ -270,35 +293,140 @@ export function SystemDesignerGenerator() {
     }
   };
 
+  const loadProjects = async () => {
+    setLoadingProjects(true);
+    try {
+      const response = await fetch("/api/projects");
+      if (!response.ok) throw new Error("Erro ao carregar projetos");
+      const data = await response.json();
+      setProjects(data.projects || []);
+    } catch (error) {
+      console.error("Erro ao carregar projetos:", error);
+      toast.error("Erro ao carregar projetos", {
+        description: "Tente novamente.",
+      });
+    } finally {
+      setLoadingProjects(false);
+    }
+  };
+
+  const handleOpenProjectsModal = () => {
+    setShowProjectsModal(true);
+    if (projects.length === 0) {
+      loadProjects();
+    }
+  };
+
+  const handleImportProject = (project: {
+    id: string;
+    name: string;
+    project_data: any;
+  }) => {
+    const { project_data } = project;
+
+    // Limpar dados de URL se existirem
+    setUrl("");
+    setImportedDesignData(null);
+    setImportSource("project");
+    setImportedProjectName(project.name);
+
+    // Construir descrição completa com dados do projeto
+    let projectDescription = "";
+
+    if (project_data.projectName) {
+      projectDescription += `**Projeto:** ${project_data.projectName}\n\n`;
+    }
+
+    if (project_data.description) {
+      projectDescription += `**Descrição:** ${project_data.description}\n\n`;
+    }
+
+    if (project_data.vision) {
+      projectDescription += `**Visão:** ${project_data.vision}\n\n`;
+    }
+
+    if (project_data.targetAudience) {
+      projectDescription += `**Público-Alvo:** ${project_data.targetAudience}\n\n`;
+    }
+
+    if (project_data.objectives) {
+      projectDescription += `**Objetivos:** ${project_data.objectives}\n\n`;
+    }
+
+    if (project_data.features) {
+      projectDescription += `**Features Principais:** ${project_data.features}\n\n`;
+    }
+
+    if (project_data.designSystem) {
+      projectDescription += `**Requisitos de Design:** ${project_data.designSystem}\n\n`;
+    }
+
+    if (project_data.strategy) {
+      projectDescription += `**Estratégia:** ${project_data.strategy}\n\n`;
+    }
+
+    if (
+      project_data.technicalRequirements &&
+      project_data.technicalRequirements.length > 0
+    ) {
+      projectDescription += `**Requisitos Técnicos:**\n${project_data.technicalRequirements
+        .map((req: string) => `- ${req}`)
+        .join("\n")}\n\n`;
+    }
+
+    // Adicionar instrução para criar sistema de design
+    projectDescription +=
+      "Com base nas informações acima, crie um sistema de design completo e detalhado.";
+
+    setInput(projectDescription.trim());
+    setShowProjectsModal(false);
+
+    toast.success("Projeto importado!", {
+      description: `Dados de "${project.name}" foram importados com sucesso.`,
+    });
+  };
+
   const handleImportMarkdown = () => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = ".md,.markdown";
-    input.onchange = async (e) => {
+    const fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = ".md,.markdown";
+    fileInput.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
 
       try {
         const text = await file.text();
-        setOutput(text);
-        updateGeneratorState("designer", { output: text });
-        toast.success("Markdown importado com sucesso!", {
-          description: "Você pode modificá-lo ou usar a IA para ajustar.",
-        });
+
+        // Se houver texto no input, adicionar o conteúdo do MD ao contexto
+        if (input.trim()) {
+          const combinedText = `${input.trim()}\n\n---\n\n## Conteúdo Importado do Markdown\n\n${text}`;
+          setInput(combinedText);
+          toast.success("Markdown adicionado ao contexto!", {
+            description:
+              "O conteúdo foi adicionado ao que você já havia digitado.",
+          });
+        } else {
+          // Se não houver texto no input, importar diretamente para o output (preview)
+          setOutput(text);
+          updateGeneratorState("designer", { output: text });
+          toast.success("Markdown importado com sucesso!", {
+            description: "Você pode modificá-lo ou usar a IA para ajustar.",
+          });
+        }
       } catch (error) {
         toast.error("Erro ao importar arquivo", {
           description: "Verifique se o arquivo é válido.",
         });
       }
     };
-    input.click();
+    fileInput.click();
   };
 
   const handleGenerate = async () => {
     if (!input.trim() && !importedDesignData) {
-      toast.error("Descreva o sistema de design ou importe um design", {
+      toast.error("Descreva o seu UI/UX Designer ou importe um design", {
         description:
-          "Por favor, descreva o sistema de design ou importe um design de um site.",
+          "Por favor, descreva o seu UI/UX Designer ou importe um design de um site.",
       });
       return;
     }
@@ -529,7 +657,7 @@ Gere código completo, funcional e pronto para uso, seguindo as melhores prátic
               <div className="p-2 rounded-lg bg-pink-100">
                 <Palette className="h-5 w-5 text-pink-600" />
               </div>
-              Descreva o Sistema de Design
+              Descreva o seu UI/UX Designer
             </CardTitle>
             <CardDescription>
               Descreva o tipo de aplicativo e contexto para criar um sistema de
@@ -537,98 +665,202 @@ Gere código completo, funcional e pronto para uso, seguindo as melhores prátic
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <div>
-                <label className="text-sm font-medium text-foreground">
-                  Importar Design de um Site (Opcional)
-                </label>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Cole a URL de um site e a IA analisará os elementos de design
-                  para criar um sistema baseado nele
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <Input
-                  type="url"
-                  placeholder="https://exemplo.com"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  className="flex-1"
-                  disabled={importing}
-                />
-                <Button
-                  onClick={handleImportDesign}
-                  disabled={importing || !url.trim()}
-                  variant="outline"
-                  size="default"
-                  className="relative overflow-hidden"
-                >
-                  {importing ? (
+            {/* Indicador de fonte selecionada */}
+            {importSource && (
+              <div
+                className={`p-3 rounded-lg border-2 ${
+                  importSource === "project"
+                    ? "bg-blue-50 dark:bg-blue-950/20 border-blue-500 dark:border-blue-400"
+                    : "bg-green-50 dark:bg-green-950/20 border-green-500 dark:border-green-400"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  {importSource === "project" ? (
                     <>
-                      <div className="absolute inset-0 flex items-center justify-center bg-background/80">
-                        <Lottie
-                          animationData={aiThinkingAnimation}
-                          className="w-12 h-12"
-                          loop={true}
-                        />
+                      <FolderOpen
+                        className={`h-5 w-5 ${
+                          importSource === "project"
+                            ? "text-blue-600 dark:text-blue-400"
+                            : "text-green-600 dark:text-green-400"
+                        }`}
+                      />
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                          Importando de Projeto
+                        </p>
+                        {importedProjectName && (
+                          <p className="text-xs text-blue-700 dark:text-blue-300 mt-0.5">
+                            Projeto: {importedProjectName}
+                          </p>
+                        )}
                       </div>
-                      <span className="relative z-10 opacity-0">Importar</span>
                     </>
                   ) : (
                     <>
-                      <Globe className="h-4 w-4 mr-2" />
-                      Importar
+                      <Globe className="h-5 w-5 text-green-600 dark:text-green-400" />
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-green-900 dark:text-green-100">
+                          Importando de URL
+                        </p>
+                        {url && (
+                          <p className="text-xs text-green-700 dark:text-green-300 mt-0.5 truncate">
+                            URL: {url}
+                          </p>
+                        )}
+                      </div>
                     </>
                   )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setImportSource(null);
+                      setImportedProjectName(null);
+                      setUrl("");
+                      setImportedDesignData(null);
+                      setInput("");
+                    }}
+                    className="h-6 w-6 p-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <div>
+                <label className="text-sm font-medium text-foreground">
+                  Importar de Projeto Salvo (Opcional)
+                </label>
+                <p className="text-xs text-muted-foreground mt-1 mb-2">
+                  Importe a descrição e características de um projeto salvo para
+                  criar o sistema de design
+                </p>
+                <Button
+                  onClick={handleOpenProjectsModal}
+                  variant={importSource === "project" ? "default" : "outline"}
+                  size="sm"
+                  className={`w-full ${
+                    importSource === "project"
+                      ? "bg-blue-600 hover:bg-blue-700 text-white"
+                      : ""
+                  }`}
+                  disabled={importSource === "url"}
+                >
+                  <FolderOpen className="h-4 w-4 mr-2" />
+                  {importSource === "project"
+                    ? "Alterar Projeto"
+                    : "Importar de Projeto"}
                 </Button>
               </div>
-              {importedDesignData && (
-                <div className="p-3 bg-accent rounded-lg border border-border flex items-start justify-between gap-2">
-                  <div className="flex items-start gap-2 flex-1">
-                    <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                    <div className="flex-1">
-                      <p className="text-xs text-muted-foreground">
-                        <strong className="text-foreground">
-                          Design importado com sucesso!
-                        </strong>{" "}
-                        Visualize os dados extraídos ou descreva modificações
-                        abaixo.
-                      </p>
+            </div>
+
+            {importSource !== "project" && (
+              <div className="space-y-2">
+                <div>
+                  <label className="text-sm font-medium text-foreground">
+                    Importar Design de um Site (Opcional)
+                  </label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Cole a URL de um site e a IA analisará os elementos de
+                    design para criar um sistema baseado nele
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    type="url"
+                    placeholder="https://exemplo.com"
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    className={`flex-1 ${
+                      importSource === "url"
+                        ? "border-green-500 dark:border-green-400 ring-2 ring-green-500/20"
+                        : ""
+                    }`}
+                    disabled={importing}
+                  />
+                  <Button
+                    onClick={handleImportDesign}
+                    disabled={importing || !url.trim()}
+                    variant={importSource === "url" ? "default" : "outline"}
+                    size="default"
+                    className={`relative overflow-hidden ${
+                      importSource === "url"
+                        ? "bg-green-600 hover:bg-green-700 text-white"
+                        : ""
+                    }`}
+                  >
+                    {importing ? (
+                      <>
+                        <div className="absolute inset-0 flex items-center justify-center bg-background/80">
+                          <Lottie
+                            animationData={aiThinkingAnimation}
+                            className="w-12 h-12"
+                            loop={true}
+                          />
+                        </div>
+                        <span className="relative z-10 opacity-0">
+                          Importar
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <Globe className="h-4 w-4 mr-2" />
+                        Importar
+                      </>
+                    )}
+                  </Button>
+                </div>
+                {importedDesignData && (
+                  <div className="p-3 bg-accent rounded-lg border border-border flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-2 flex-1">
+                      <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                      <div className="flex-1">
+                        <p className="text-xs text-muted-foreground">
+                          <strong className="text-foreground">
+                            Design importado com sucesso!
+                          </strong>{" "}
+                          Visualize os dados extraídos ou descreva modificações
+                          abaixo.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 flex-shrink-0"
+                        onClick={() => setShowDesignDataModal(true)}
+                        title="Visualizar dados extraídos"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 flex-shrink-0"
+                        onClick={() => {
+                          setImportedDesignData(null);
+                          setUrl("");
+                          setImportSource(null);
+                          toast.info("Design importado removido");
+                        }}
+                        title="Remover design importado"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0 flex-shrink-0"
-                      onClick={() => setShowDesignDataModal(true)}
-                      title="Visualizar dados extraídos"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0 flex-shrink-0"
-                      onClick={() => {
-                        setImportedDesignData(null);
-                        setUrl("");
-                        toast.info("Design importado removido");
-                      }}
-                      title="Remover design importado"
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">
                 {importedDesignData
                   ? "Descreva modificações ou ajustes (opcional)"
-                  : "Descreva o Sistema de Design"}
+                  : "Descreva o Sistema de Design UI/UX"}
               </label>
               <Textarea
                 placeholder={
@@ -902,6 +1134,90 @@ Gere código completo, funcional e pronto para uso, seguindo as melhores prátic
                   Aplicar Diretamente
                 </>
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal para selecionar projeto */}
+      <Dialog open={showProjectsModal} onOpenChange={setShowProjectsModal}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Importar de Projeto</DialogTitle>
+            <DialogDescription>
+              Selecione um projeto salvo para importar sua descrição e
+              características
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto pr-2">
+            {loadingProjects ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : projects.length === 0 ? (
+              <div className="text-center py-12">
+                <FolderOpen className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">
+                  Nenhum projeto encontrado
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Você precisa ter pelo menos um projeto salvo para importar.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {projects.map((project) => (
+                  <Card
+                    key={project.id}
+                    className="cursor-pointer hover:bg-accent transition-colors"
+                    onClick={() => handleImportProject(project)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-sm mb-1 truncate">
+                            {project.name}
+                          </h4>
+                          {project.project_data?.description && (
+                            <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
+                              {project.project_data.description}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Calendar className="h-3 w-3" />
+                            {new Date(project.created_at).toLocaleDateString(
+                              "pt-BR",
+                              {
+                                day: "2-digit",
+                                month: "2-digit",
+                                year: "numeric",
+                              }
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleImportProject(project);
+                          }}
+                        >
+                          <CheckCircle2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowProjectsModal(false)}
+            >
+              Cancelar
             </Button>
           </DialogFooter>
         </DialogContent>

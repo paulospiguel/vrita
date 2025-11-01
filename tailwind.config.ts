@@ -4,7 +4,7 @@ import type { Config } from "tailwindcss"
 
 const config: Config = {
   // Dark mode ainda usa 'class' para compatibilidade com shadcn/ui
-  darkMode: ["class"],
+  darkMode: "class",
   
   // Content paths - ainda necessário para v4 detectar os arquivos
   content: [
