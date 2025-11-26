@@ -4,9 +4,11 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Header } from "@/components/layout/header"
-import { FolderOpen, Trash2, Eye, Calendar, Loader2 } from "lucide-react"
+import { FolderOpen, Trash2, Eye, Calendar, Loader2, Brain } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { useUserRole } from "@/lib/hooks/use-user-role"
+import { generatePRDTemplate } from "@/lib/prd-template"
 import type { ProjectData } from "@/components/providers/project-context"
 
 interface Project {
@@ -20,9 +22,11 @@ interface Project {
 
 export function ProjectsContent() {
   const router = useRouter()
+  const { canCreateQuiz, loading: roleLoading } = useUserRole()
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [creatingQuizFromProject, setCreatingQuizFromProject] = useState<string | null>(null)
 
   useEffect(() => {
     loadProjects()
@@ -81,6 +85,45 @@ export function ProjectsContent() {
       description: `"${project.name}" foi carregado com sucesso.`,
     })
     router.push("/")
+  }
+
+  const handleCreateQuizFromProject = async (project: Project) => {
+    if (!canCreateQuiz) {
+      toast.error("Apenas administradores e gerentes podem criar quizzes")
+      return
+    }
+
+    setCreatingQuizFromProject(project.id)
+
+    try {
+      // Usar prd_content se existir, senão gerar template a partir dos dados do projeto
+      let documentsContent = project.prd_content
+
+      if (!documentsContent || documentsContent.trim().length < 500) {
+        // Gerar conteúdo a partir dos dados do projeto
+        documentsContent = generatePRDTemplate(project.project_data)
+      }
+
+      // Salvar dados no sessionStorage para pré-preencher o formulário de quiz
+      sessionStorage.setItem("quizFromProject", JSON.stringify({
+        title: `Quiz: ${project.name}`,
+        description: `Quiz baseado no projeto "${project.name}"`,
+        documents_content: documentsContent,
+        project_id: project.id,
+        project_name: project.name
+      }))
+
+      // Redirecionar para página de criação de quiz
+      router.push("/quiz/create")
+      toast.success("Redirecionando para criação de quiz...", {
+        description: `Usando informações do projeto "${project.name}"`,
+      })
+    } catch (error: any) {
+      console.error("Erro ao preparar quiz:", error)
+      toast.error("Erro ao criar quiz a partir do projeto")
+    } finally {
+      setCreatingQuizFromProject(null)
+    }
   }
 
   const formatDate = (dateString: string) => {
@@ -142,6 +185,7 @@ export function ProjectsContent() {
                       {project.project_data.description}
                     </p>
                   )}
+                  <div className="flex flex-col gap-2">
                   <div className="flex gap-2">
                     <Button
                       onClick={() => handleViewProject(project)}
@@ -164,6 +208,28 @@ export function ProjectsContent() {
                         <Trash2 className="h-4 w-4" />
                       )}
                     </Button>
+                    </div>
+                    {canCreateQuiz && (
+                      <Button
+                        onClick={() => handleCreateQuizFromProject(project)}
+                        variant="outline"
+                        size="sm"
+                        disabled={creatingQuizFromProject === project.id}
+                        className="w-full"
+                      >
+                        {creatingQuizFromProject === project.id ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Preparando...
+                          </>
+                        ) : (
+                          <>
+                            <Brain className="h-4 w-4 mr-2" />
+                            Criar Quiz
+                          </>
+                        )}
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>

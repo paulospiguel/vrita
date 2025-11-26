@@ -1,0 +1,7 @@
+---
+alwaysApply: true
+---
+
+### code
+
+Every time after created the code, check if have the imports not used and fix it, run type-check and type-lint to guard safe code and no-build error

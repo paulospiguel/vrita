@@ -228,7 +228,7 @@ export default function AuthPage() {
               Pronto para começar?
             </h2>
             <p className="text-lg sm:text-xl text-primary-foreground/80 mb-8 sm:mb-10 max-w-2xl mx-auto">
-              Faça login com sua conta Google e comece a criar documentação
+              Faça login com sua conta Google ou use código por email e comece a criar documentação
               profissional em minutos
             </p>
             <div className="bg-card rounded-xl p-6 sm:p-8">

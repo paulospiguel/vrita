@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
 import { createClient } from "@/lib/supabase/client";
-import { Settings, LogOut, FolderOpen, Menu, X } from "lucide-react";
+import { Settings, LogOut, FolderOpen, Menu, X, Trophy } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
@@ -20,6 +20,8 @@ export function Header() {
     await supabase.auth.signOut();
     router.push("/auth");
   };
+
+  const isQuizActive = pathname.startsWith("/quiz");
 
   return (
     <header className="border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
@@ -38,6 +40,17 @@ export function Header() {
                 <FolderOpen className="h-4 w-4 mr-2" />
                 <span className="hidden lg:inline">Meus Projetos</span>
                 <span className="lg:hidden">Projetos</span>
+              </Button>
+            </Link>
+            <Link href="/quiz">
+              <Button
+                variant={isQuizActive ? "default" : "ghost"}
+                size="sm"
+                className="text-sm"
+              >
+                <Trophy className="h-4 w-4 mr-2" />
+                <span className="hidden lg:inline">Quiz de Requisitos</span>
+                <span className="lg:hidden">Quiz</span>
               </Button>
             </Link>
             <Link href="/settings">
@@ -90,6 +103,16 @@ export function Header() {
               >
                 <FolderOpen className="h-4 w-4 mr-2" />
                 Meus Projetos
+              </Button>
+            </Link>
+            <Link href="/quiz" onClick={() => setMobileMenuOpen(false)}>
+              <Button
+                variant={isQuizActive ? "default" : "ghost"}
+                size="sm"
+                className="w-full justify-start text-sm"
+              >
+                <Trophy className="h-4 w-4 mr-2" />
+                Quiz de Requisitos
               </Button>
             </Link>
             <Link href="/settings" onClick={() => setMobileMenuOpen(false)}>
